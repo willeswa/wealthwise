@@ -1,74 +1,83 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React, { useState } from "react";
+import { ScrollView, View, Modal, Pressable, Text, StyleSheet } from "react-native";
+import { BudgetSummary } from "@/components/budget-summary";
+import { DebtSummary } from "@/components/debt-summary";
+import { IncomeExpensesSummary } from "@/components/income-expenses-summary";
+import { InvestmentSummary } from "@/components/investment-summary";
+import { AddIncomeScreen } from "@/components/temp-income-screen";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+export type Action = "add-income" | "add-expense" | "add-investment" | "add-debt";
 
 export default function HomeScreen() {
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [currentAction, setCurrentAction] = useState<Action | null>(null);
+
+  const openModal = (action: Action) => {
+    setCurrentAction(action);
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setCurrentAction(null);
+    setModalVisible(false);
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+      {/* Main Home Screen Content */}
+      <ScrollView contentContainerStyle={{ padding: 16 }}>
+        <IncomeExpensesSummary onAddNew={(type) => openModal(type === "income" ? "add-income" : "add-expense")} />
+        <BudgetSummary />
+        <DebtSummary />
+        <InvestmentSummary />
+      </ScrollView>
+
+      {/* Modal for Add Actions */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isModalVisible}
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            {/* Close Button */}
+            <Pressable style={styles.closeButton} onPress={closeModal}>
+              <Text style={styles.closeButtonText}>✕</Text>
+            </Pressable>
+
+            {/* Dynamic Content Based on Action */}
+            {currentAction === "add-income" && <AddIncomeScreen />}
+            {/* Add corresponding components for other actions (e.g., AddExpenseScreen) */}
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  modalContainer: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent background
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  modalContent: {
+    height: "95%",
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 16,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  closeButton: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    zIndex: 10,
+  },
+  closeButtonText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
   },
 });

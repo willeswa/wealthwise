@@ -1,0 +1,1 @@
+export type Action = "income" | "expense" | "investment" | "debt";
