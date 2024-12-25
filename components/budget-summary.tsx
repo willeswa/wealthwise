@@ -59,13 +59,16 @@ export const BudgetSummary = () => {
 
   if (!summary || summary.categories.length === 0) {
     return (
-      <EmptyState
+     <Card>
+      <Text style={styles.title}>Budget Overview</Text>
+       <EmptyState
         icon={<Ionicons name="wallet-outline" size={34} color="#8A8A8A" />}
         message="No budget data available."
         encouragement="Set up a budget to track your expenses and stay in control of your finances!"
         ctaText="Create A Budget"
         onPress={() => console.log("Navigate to add budget screen")}
       />
+     </Card>
     );
   }
 
@@ -140,6 +143,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: colors.text.primary,
+    flex: 1
   },
   viewAll: {
     fontSize: 14,
@@ -274,5 +278,11 @@ const styles = StyleSheet.create({
   legendValue: {
     fontSize: 11,
     color: colors.text.primary,
+  },
+  content: {
+    alignItems: "center",
+    backgroundColor: "white",
+    padding: 16,
+    borderRadius: 16,
   },
 });

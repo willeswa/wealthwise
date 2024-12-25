@@ -37,7 +37,7 @@ export const DebtSummary = ({ onAddNew }: Props) => {
   return (
     <Card>
       <Text style={styles.cardTitle}>Debt Summary</Text>
-      <View style={styles.content}>{renderSummary()}</View>
+      <>{renderSummary()}</>
     </Card>
   );
 };

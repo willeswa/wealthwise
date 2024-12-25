@@ -9,6 +9,7 @@ import { CustomDatePicker } from './CustomDatePicker';
 import { Dropdown, DropdownOption } from './Dropdown';
 import { CurrencyType, Numpad } from './Numpad';
 import { CategoryType } from './type';
+import { useModalStore } from '../store/modal-store';
 
 // Add currency types
 
@@ -43,6 +44,7 @@ const PADDING_HORIZONTAL = 16;
 
 export const AddIncomeScreen = () => {
   const { defaultCurrency, setDefaultCurrency: updateDefaultCurrency } = useIncomeStore();
+  const { closeModal } = useModalStore();
   const [amount, setAmount] = useState("0.00");
   const [frequency, setFrequency] = useState<FrequencyType>('monthly');
   const [showFrequencyPicker, setShowFrequencyPicker] = useState(false);
@@ -91,6 +93,8 @@ export const AddIncomeScreen = () => {
       setFrequency('monthly');
       setSelectedCategory(CATEGORIES[0]);
       setDate(new Date());
+      
+      closeModal();
     } catch (error) {
       console.error('Error adding income:', error);
     }

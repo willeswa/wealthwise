@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Expense, ExpenseInput } from '../utils/types/expense';
 import { addExpense, deleteExpense, getExpenses } from '../utils/db/expense';
+import { getDefaultCurrency, setDefaultCurrency } from '../utils/db/settings';
 import { useBudgetStore } from './budget-store';
 
 interface ExpenseStore {
@@ -8,9 +9,11 @@ interface ExpenseStore {
   loading: boolean;
   error: string | null;
   initialized: boolean;
+  defaultCurrency: string;
   fetchExpenses: () => Promise<void>;
   addNewExpense: (expense: ExpenseInput) => Promise<void>;
   removeExpense: (id: number) => Promise<void>;
+  setDefaultCurrency: (currency: string) => Promise<void>;
 }
 
 export const useExpenseStore = create<ExpenseStore>((set) => ({
@@ -18,12 +21,16 @@ export const useExpenseStore = create<ExpenseStore>((set) => ({
   loading: false,
   error: null,
   initialized: false,
+  defaultCurrency: 'USD',
 
   fetchExpenses: async () => {
     try {
       set({ loading: true, error: null });
-      const data = await getExpenses();
-      set({ expenses: data, initialized: true });
+      const [data, currency] = await Promise.all([
+        getExpenses(),
+        getDefaultCurrency()
+      ]);
+      set({ expenses: data, defaultCurrency: currency, initialized: true });
     } catch (error) {
       set({ error: 'Failed to fetch expenses', initialized: false });
       console.error('Error fetching expenses:', error);
@@ -59,6 +66,16 @@ export const useExpenseStore = create<ExpenseStore>((set) => ({
       throw error;
     } finally {
       set({ loading: false });
+    }
+  },
+
+  setDefaultCurrency: async (currency: string) => {
+    try {
+      await setDefaultCurrency(currency);
+      set({ defaultCurrency: currency });
+    } catch (error) {
+      console.error('Error setting default currency:', error);
+      throw error;
     }
   },
 }));

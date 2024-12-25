@@ -10,6 +10,7 @@ import { CustomDatePicker } from './CustomDatePicker';
 import { Dropdown, DropdownOption } from './Dropdown';
 import { CurrencyType, Numpad } from './Numpad';
 import { CategoryType } from './type';
+import { useModalStore } from '../store/modal-store';
 
 const CURRENCIES: CurrencyType[] = [
   { symbol: '$', code: 'USD', name: 'US Dollar' },
@@ -34,10 +35,14 @@ const PADDING_HORIZONTAL = 16;
 
 export const AddExpenseScreen = () => {
   const navigation = useNavigation();
-  const addNewExpense = useExpenseStore(state => state.addNewExpense);
+  const { addNewExpense, defaultCurrency, setDefaultCurrency: updateDefaultCurrency } = useExpenseStore();
+  const { closeModal } = useModalStore();
   const [amount, setAmount] = useState("0.00");
   const [comment, setComment] = useState("");
-  const [currency, setCurrency] = useState<CurrencyType>(CURRENCIES[0]);
+  const [currency, setCurrency] = useState<CurrencyType>(() => {
+    // Initialize with default currency or fallback to USD
+    return CURRENCIES.find(c => c.code === defaultCurrency) || CURRENCIES[0];
+  });
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>(CATEGORIES[0]);
   const commentInputRef = useRef<TextInput>(null);
@@ -94,8 +99,7 @@ export const AddExpenseScreen = () => {
       setSelectedCategory(CATEGORIES[0]);
       setDate(new Date());
       
-      // Navigate back
-      // navigation.goBack();
+      closeModal();
 
     } catch (error) {
       console.error('Error adding expense:', error);
@@ -105,8 +109,15 @@ export const AddExpenseScreen = () => {
     }
   };
 
-  const selectCurrency = (newCurrency: CurrencyType) => {
-    setCurrency(newCurrency);
+  const selectCurrency = async (newCurrency: CurrencyType) => {
+    if (newCurrency.code === currency.code) return;
+    
+    try {
+      await updateDefaultCurrency(newCurrency.code);
+      setCurrency(newCurrency);
+    } catch (error) {
+      console.error('Error updating currency:', error);
+    }
   };
 
   const handleCategoryPress = () => {
