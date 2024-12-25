@@ -11,10 +11,10 @@ export default function HomeScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <BudgetSummary />
         <IncomeExpensesSummary 
           onAddNew={(type) => openModal(type === "income" ? "add-income" : "add-expense")} 
         />
-        <BudgetSummary />
         <DebtSummary onAddNew={() => openModal("add-debt")} />
         <InvestmentSummary />
       </ScrollView>

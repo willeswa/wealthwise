@@ -18,10 +18,12 @@ export interface BudgetSummary {
     percentage: number;
     spent: number;
     type: CategoryType;
+    color: string;  // Add this line
   }>;
   distribution: {
     wants: number;
     needs: number;
     savings: number;
   };
+  currency: string;  // Add this line
 }

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Expense, ExpenseInput } from '../utils/types/expense';
 import { addExpense, deleteExpense, getExpenses } from '../utils/db/expense';
+import { useBudgetStore } from './budget-store';
 
 interface ExpenseStore {
   expenses: Expense[];
@@ -37,6 +38,7 @@ export const useExpenseStore = create<ExpenseStore>((set) => ({
       await addExpense(expenseData);
       const updatedExpenses = await getExpenses();
       set({ expenses: updatedExpenses });
+      await useBudgetStore.getState().fetchSummary();
     } catch (error) {
       set({ error: 'Failed to add expense' });
       throw error;
@@ -51,6 +53,7 @@ export const useExpenseStore = create<ExpenseStore>((set) => ({
       await deleteExpense(id);
       const updatedExpenses = await getExpenses();
       set({ expenses: updatedExpenses });
+      await useBudgetStore.getState().fetchSummary();
     } catch (error) {
       set({ error: 'Failed to delete expense' });
       throw error;

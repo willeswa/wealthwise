@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Income, IncomeInput } from '../utils/types/income';
 import { addIncome, deleteIncome, getIncomes } from '../utils/db/income';
 import { getDefaultCurrency, setDefaultCurrency } from '../utils/db/settings';
+import { useBudgetStore } from './budget-store';
 
 interface IncomeStore {
   incomes: Income[];
@@ -44,6 +45,7 @@ export const useIncomeStore = create<IncomeStore>((set) => ({
       await addIncome(incomeData);
       const updatedIncomes = await getIncomes();
       set({ incomes: updatedIncomes });
+      await useBudgetStore.getState().fetchSummary();
     } catch (error) {
       set({ error: 'Failed to add income' });
       throw error;
@@ -58,6 +60,7 @@ export const useIncomeStore = create<IncomeStore>((set) => ({
       await deleteIncome(id);
       const updatedIncomes = await getIncomes();
       set({ incomes: updatedIncomes });
+      await useBudgetStore.getState().fetchSummary();
     } catch (error) {
       set({ error: 'Failed to delete income' });
       throw error;

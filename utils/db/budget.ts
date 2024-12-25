@@ -24,6 +24,33 @@ const getCategoryType = (category: string): 'want' | 'need' | 'savings' => {
   return categoryMap[category] || 'want'; // Default to 'want' if category not found
 };
 
+// Function to generate colors for unknown categories
+const getDefaultColor = (category: string): string => {
+  // Generate a consistent color based on the category string
+  let hash = 0;
+  for (let i = 0; i < category.length; i++) {
+    hash = category.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = hash % 360;
+  return `hsl(${hue}, 70%, 70%)`; // Using HSL for consistent lightness
+};
+
+// Add color mapping for categories
+const categoryColors: Record<string, string> = {
+  'Food': '#FF6B6B',
+  'Transport': '#4ECDC4',
+  'Bills': '#45B7D1',
+  'Rent': '#FFB6C1',
+  'Education': '#98FB98',
+  'Healthcare': '#87CEEB',
+  'Entertainment': '#DDA0DD',
+  'Shopping': '#F0E68C',
+  'Travel': '#E6E6FA',
+  'Investment': '#98FB98',
+  'Emergency Fund': '#FFA07A',
+  'Retirement': '#87CEFA'
+};
+
 export const getBudgetSummary = async (): Promise<BudgetSummary> => {
   const db = getDatabase();
   
@@ -42,12 +69,13 @@ export const getBudgetSummary = async (): Promise<BudgetSummary> => {
       if (!acc[expense.category]) {
         acc[expense.category] = {
           spent: 0,
+          currency: expense.currency,
           type: getCategoryType(expense.category)
         };
       }
       acc[expense.category].spent += expense.amount;
       return acc;
-    }, {} as Record<string, { spent: number; type: 'want' | 'need' | 'savings' }>);
+    }, {} as Record<string, { spent: number; currency: string; type: 'want' | 'need' | 'savings' }>);
 
     // Transform into categories array
     const categories = Object.entries(categoryGroups).map(([name, data]) => ({
@@ -55,12 +83,15 @@ export const getBudgetSummary = async (): Promise<BudgetSummary> => {
       allocated: data.spent, // Using spent amount as allocated since we don't have preset budgets
       spent: data.spent,
       percentage: (data.spent / totalExpenses) * 100,
-      type: data.type
+      type: data.type,
+      currency: data.currency,
+      color: categoryColors[name] || getDefaultColor(name) // Add color property
     }));
 
     // Calculate distribution
     const distribution = categories.reduce((acc, category) => {
-      acc[`${category.type}s`] += category.allocated;
+      const key = category.type === 'savings' ? 'savings' : `${category.type}s` as const;
+      acc[key as keyof typeof acc] += category.allocated;
       return acc;
     }, { wants: 0, needs: 0, savings: 0 });
 
@@ -69,7 +100,8 @@ export const getBudgetSummary = async (): Promise<BudgetSummary> => {
       totalExpenses,
       unallocatedAmount: totalIncome - totalExpenses,
       categories: categories.sort((a, b) => b.spent - a.spent), // Sort by spent amount
-      distribution
+      distribution,
+      currency: incomes[0]?.currency || 'USD' // Default to USD if no income
     };
   } catch (error) {
     console.error('Error getting budget summary:', error);
