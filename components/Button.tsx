@@ -1,41 +1,49 @@
 import React from 'react';
-import { Pressable, Text, StyleSheet } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
 
-interface ButtonProps {
-  onPress: () => void;
+interface ButtonProps extends TouchableOpacityProps {
   title: string;
-  style?: object;
-  textStyle?: object;
+  disabled?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({ 
-  onPress, 
-  title,
-  style,
-  textStyle
-}) => {
+export const Button = ({ title, disabled, style, ...props }: ButtonProps) => {
   return (
-    <Pressable 
-      style={[styles.button, style]} 
-      onPress={onPress}
+    <TouchableOpacity
+      {...props}
+      disabled={disabled}
+      style={[
+        styles.button,
+        disabled && styles.buttonDisabled,
+        style
+      ]}
     >
-      <Text style={[styles.buttonText, textStyle]}>{title}</Text>
-    </Pressable>
+      <Text style={[
+        styles.buttonText,
+        disabled && styles.buttonTextDisabled
+      ]}>
+        {title}
+      </Text>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: "#232D59",
-    borderRadius: 32,
+    backgroundColor: '#232D59',
     paddingVertical: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
+    paddingHorizontal: 24,
+    borderRadius: 32,
+    alignItems: 'center',
+  },
+  buttonDisabled: {
+    backgroundColor: '#CCCCCC',
   },
   buttonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "bold",
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  buttonTextDisabled: {
+    color: '#888888',
   },
 });

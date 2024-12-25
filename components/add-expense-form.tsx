@@ -8,6 +8,9 @@ import { Dropdown, DropdownOption } from './Dropdown';
 import { CurrencyType, Numpad } from './Numpad';
 import { CategoryType } from './type';
 import { CustomDatePicker } from './CustomDatePicker';
+import { useExpenseStore } from '../store/expense-store';
+import { format } from 'date-fns';
+import { useNavigation } from '@react-navigation/native';
 
 const CURRENCIES: CurrencyType[] = [
   { symbol: '$', code: 'USD', name: 'US Dollar' },
@@ -31,6 +34,8 @@ const CATEGORIES: CategoryType[] = [
 const PADDING_HORIZONTAL = 16;
 
 export const AddExpenseScreen = () => {
+  const navigation = useNavigation();
+  const addNewExpense = useExpenseStore(state => state.addNewExpense);
   const [amount, setAmount] = useState("0.00");
   const [comment, setComment] = useState("");
   const [currency, setCurrency] = useState<CurrencyType>(CURRENCIES[0]);
@@ -39,6 +44,7 @@ export const AddExpenseScreen = () => {
   const commentInputRef = useRef<TextInput>(null);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ...existing keyboard effect code...
 
@@ -59,14 +65,45 @@ export const AddExpenseScreen = () => {
     }
   };
 
-  const handleConfirm = () => {
-    console.log("Confirmed Expense:", {
-      amount,
-      comment,
-      category: selectedCategory,
-      currency,
-      date
-    });
+  const handleConfirm = async () => {
+    if (isSubmitting) return;
+
+    try {
+      setIsSubmitting(true);
+
+      // Convert amount string to number, removing any currency formatting
+      const numericAmount = parseFloat(amount.replace(/[^0-9.-]+/g, ''));
+
+      if (isNaN(numericAmount) || numericAmount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+      }
+
+      const expenseData = {
+        amount: numericAmount,
+        currency: currency.code,
+        category_id: selectedCategory.id,
+        comment: comment.trim(),
+        date: format(date, 'yyyy-MM-dd')
+      };
+      
+      await addNewExpense(expenseData);
+      
+      // Reset form
+      setAmount("0.00");
+      setComment("");
+      setSelectedCategory(CATEGORIES[0]);
+      setDate(new Date());
+      
+      // Navigate back
+      // navigation.goBack();
+
+    } catch (error) {
+      console.error('Error adding expense:', error);
+      alert('Failed to add expense. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const selectCurrency = (newCurrency: CurrencyType) => {
@@ -152,8 +189,9 @@ export const AddExpenseScreen = () => {
 
       <View style={styles.bottomContainer}>
         <Button 
-          title="Add Expense"
+          title={isSubmitting ? "Adding..." : "Add Expense"}
           onPress={handleConfirm}
+          disabled={isSubmitting || parseFloat(amount) <= 0}
         />
       </View>
 

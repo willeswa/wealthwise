@@ -28,9 +28,7 @@ export default function Layout() {
           <TabTrigger name="budget" href={"/(tabs)/budget"} asChild>
             <TabButton icon="newspaper">Budget</TabButton>
           </TabTrigger>
-          <TabTrigger name="add-new" asChild>
             <CenterButton />
-          </TabTrigger>
           <TabTrigger name="debt" href={"/(tabs)/debt"} asChild>
             <TabButton icon="newspaper">Debt</TabButton>
           </TabTrigger>

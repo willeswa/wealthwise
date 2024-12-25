@@ -5,6 +5,7 @@ import { Card } from "./card";
 import { EmptyState } from "./empty-state";
 import { SwitchPill } from "./switch-pill";
 import { useIncomeStore } from "../store/income-store";
+import { useExpenseStore } from "../store/expense-store";
 import { formatCurrency } from "../utils/format";
 import { format, addWeeks, addMonths, addYears } from 'date-fns';
 import { colors } from '../utils/colors';
@@ -45,14 +46,40 @@ const FrequencyBadge = ({ frequency }: { frequency: string }) => (
 
 export const IncomeExpensesSummary = ({ onAddNew }: Prop) => {
   const [selectedOption, setSelectedOption] = useState<"Income" | "Expenses">("Income");
-  const { incomes, loading, error, fetchIncomes, initialized, defaultCurrency } = useIncomeStore();
-  const expensesData: any[] = [];
+  const { 
+    incomes, 
+    loading: incomeLoading, 
+    error: incomeError, 
+    fetchIncomes, 
+    initialized: incomeInitialized,
+    defaultCurrency 
+  } = useIncomeStore();
+
+  const {
+    expenses,
+    loading: expenseLoading,
+    error: expenseError,
+    fetchExpenses,
+    initialized: expenseInitialized
+  } = useExpenseStore();
 
   useEffect(() => {
-    if (!initialized) {
+    if (!incomeInitialized) {
       fetchIncomes();
     }
-  }, [initialized]);
+    if (!expenseInitialized) {
+      fetchExpenses();
+    }
+  }, [incomeInitialized, expenseInitialized]);
+
+  const getIconForItem = (item: any, type: "Income" | "Expenses") => {
+    if (type === "Income") {
+      return "wallet-outline";
+    }
+    // Return appropriate icon based on expense category
+    // const category = CATEGORIES.find(c => c.id === item.category_id);
+    return "card-outline";
+  };
 
   const renderSummaryContent = (data: any[]) => {
     const totalAmount = data.reduce((sum, item) => sum + item.amount, 0);
@@ -65,7 +92,7 @@ export const IncomeExpensesSummary = ({ onAddNew }: Prop) => {
             {formatCurrency(totalAmount, defaultCurrency)}
           </Text>
           <Text style={styles.subtext}>
-            {`${numberOfSources} source${numberOfSources !== 1 ? 's' : ''}`}
+            {`${numberOfSources} ${selectedOption === "Income" ? "source" : "transaction"}${numberOfSources !== 1 ? 's' : ''}`}
           </Text>
         </View>
 
@@ -74,21 +101,31 @@ export const IncomeExpensesSummary = ({ onAddNew }: Prop) => {
             <View key={item.id} style={styles.incomeItem}>
               <View style={styles.itemMain}>
                 <MaterialCommunityIcons 
-                  name={'cash'} 
+                  name={getIconForItem(item, selectedOption)} 
                   size={20} 
                   color={colors.accent}
                   style={styles.icon}
                 />
                 <View>
                   <Text style={styles.itemPrimary}>
-                    {formatCurrency(item.amount, defaultCurrency)}
+                    {formatCurrency(item.amount, item.currency)}
                   </Text>
                   <Text style={styles.itemSecondary}>
-                    {getNextPaymentDate(item.frequency, item.date)}
+                    {selectedOption === "Income" 
+                      ? getNextPaymentDate(item.frequency, item.date)
+                      : format(new Date(item.date), 'MMM d, yyyy')}
                   </Text>
                 </View>
               </View>
-              <FrequencyBadge frequency={item.frequency} />
+              {selectedOption === "Income" ? (
+                <FrequencyBadge frequency={item.frequency} />
+              ) : (
+                item.comment && (
+                  <Text style={styles.comment} numberOfLines={1}>
+                    {item.comment}
+                  </Text>
+                )
+              )}
             </View>
           ))}
           {data.length > 3 && (
@@ -106,7 +143,10 @@ export const IncomeExpensesSummary = ({ onAddNew }: Prop) => {
   };
 
   const renderSummary = () => {
-    const data = selectedOption === "Income" ? incomes : expensesData;
+    const isIncome = selectedOption === "Income";
+    const data = isIncome ? incomes : expenses;
+    const loading = isIncome ? incomeLoading : expenseLoading;
+    const error = isIncome ? incomeError : expenseError;
 
     if (error) {
       return <Text style={styles.error}>{error}</Text>;
@@ -124,7 +164,7 @@ export const IncomeExpensesSummary = ({ onAddNew }: Prop) => {
       <EmptyState
         icon={
           <Ionicons
-            name={selectedOption === "Income" ? "wallet-outline" : "card-outline"}
+            name={isIncome ? "wallet-outline" : "card-outline"}
             size={38}
             color="#8A8A8A"
           />
@@ -148,6 +188,16 @@ export const IncomeExpensesSummary = ({ onAddNew }: Prop) => {
     </Card>
   );
 };
+
+const additionalStyles = StyleSheet.create({
+  comment: {
+    fontSize: 12,
+    color: colors.text.light,
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: 8,
+  },
+});
 
 const styles = StyleSheet.create({
   card: {
@@ -241,4 +291,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.accent,
   },
+  ...additionalStyles
 });
