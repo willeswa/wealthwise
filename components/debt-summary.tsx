@@ -4,7 +4,11 @@ import { EmptyState } from "./empty-state";
 import { Ionicons } from "@expo/vector-icons";
 import { Card } from "./card";
 
-export const DebtSummary = () => {
+type Props = {
+  onAddNew: () => void;
+};
+
+export const DebtSummary = ({ onAddNew }: Props) => {
   const debtsData = []; // Replace with actual debt data
 
   const renderSummary = () => {
@@ -25,7 +29,7 @@ export const DebtSummary = () => {
         message="No debt data available."
         encouragement="Add your debts to start managing them effectively and stay on top of your finances!"
         ctaText="Add Debt"
-        onPress={() => console.log("Navigate to add debt screen")}
+        onPress={onAddNew}
       />
     );
   };
