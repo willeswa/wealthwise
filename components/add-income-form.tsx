@@ -1,13 +1,14 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { AmountInput } from './AmountInput';
 import { Button } from './Button';
+import { CustomDatePicker } from './CustomDatePicker';
 import { Dropdown, DropdownOption } from './Dropdown';
 import { CurrencyType, Numpad } from './Numpad';
 import { CategoryType } from './type';
-import { CustomDatePicker } from './CustomDatePicker';
+import { useIncomeStore } from '../store/income-store';
+import { IncomeInput } from '../utils/types/income';
 
 // Add currency types
 
@@ -41,14 +42,20 @@ const FREQUENCIES: { label: string; value: FrequencyType }[] = [
 const PADDING_HORIZONTAL = 16;
 
 export const AddIncomeScreen = () => {
+  const { defaultCurrency, setDefaultCurrency: updateDefaultCurrency } = useIncomeStore();
   const [amount, setAmount] = useState("0.00");
   const [frequency, setFrequency] = useState<FrequencyType>('monthly');
   const [showFrequencyPicker, setShowFrequencyPicker] = useState(false);
-  const [currency, setCurrency] = useState<CurrencyType>(CURRENCIES[0]);
+  const [currency, setCurrency] = useState<CurrencyType>(() => {
+    // Initialize with default currency or fallback to USD
+    return CURRENCIES.find(c => c.code === defaultCurrency) || CURRENCIES[0];
+  });
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>(CATEGORIES[0]);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const addNewIncome = useIncomeStore(state => state.addNewIncome);
 
   const handleNumberPress = (num: string) => {
     if (num === "." && amount.includes(".")) return;
@@ -67,18 +74,37 @@ export const AddIncomeScreen = () => {
     }
   };
 
-  const handleConfirm = () => {
-    console.log("Confirmed Income:", {
-      amount,
-      frequency,
-      category: selectedCategory,
-      currency,
-      date
-    });
+  const handleConfirm = async () => {
+    try {
+      const incomeData: IncomeInput = {
+        amount: parseFloat(amount),
+        currency: currency.code,
+        category_id: selectedCategory.id,
+        frequency,
+        date: date.toISOString().split('T')[0],
+      };
+
+      await addNewIncome(incomeData);
+      
+      // Reset form
+      setAmount("0.00");
+      setFrequency('monthly');
+      setSelectedCategory(CATEGORIES[0]);
+      setDate(new Date());
+    } catch (error) {
+      console.error('Error adding income:', error);
+    }
   };
 
-  const selectCurrency = (newCurrency: CurrencyType) => {
-    setCurrency(newCurrency);
+  const selectCurrency = async (newCurrency: CurrencyType) => {
+    if (newCurrency.code === currency.code) return;
+    
+    try {
+      await updateDefaultCurrency(newCurrency.code);
+      setCurrency(newCurrency);
+    } catch (error) {
+      console.error('Error updating currency:', error);
+    }
   };
 
   const handleCategoryPress = () => {
