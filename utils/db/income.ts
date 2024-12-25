@@ -5,8 +5,8 @@ export const addIncome = async (income: IncomeInput): Promise<number> => {
   try {
     const db = getDatabase();
     const result = await db.runAsync(
-      'INSERT INTO income (amount, currency, category_id, frequency, date) VALUES (?, ?, ?, ?, ?)',
-      [income.amount, income.currency, income.category_id, income.frequency, income.date]
+      'INSERT INTO income (amount, currency, category, frequency, date) VALUES (?, ?, ?, ?, ?)',
+      [income.amount, income.currency, income.category, income.frequency, income.date]
     );
     return result.lastInsertRowId;
   } catch (error) {

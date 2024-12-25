@@ -2,7 +2,7 @@ export interface Income {
   id?: number;
   amount: number;
   currency: string;
-  category_id: string;
+  category: string;
   frequency: 'weekly' | 'monthly' | 'yearly';
   date: string;
   created_at?: string;

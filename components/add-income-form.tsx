@@ -1,14 +1,14 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useIncomeStore } from '../store/income-store';
+import { IncomeInput } from '../utils/types/income';
 import { AmountInput } from './AmountInput';
 import { Button } from './Button';
 import { CustomDatePicker } from './CustomDatePicker';
 import { Dropdown, DropdownOption } from './Dropdown';
 import { CurrencyType, Numpad } from './Numpad';
 import { CategoryType } from './type';
-import { useIncomeStore } from '../store/income-store';
-import { IncomeInput } from '../utils/types/income';
 
 // Add currency types
 
@@ -79,7 +79,7 @@ export const AddIncomeScreen = () => {
       const incomeData: IncomeInput = {
         amount: parseFloat(amount),
         currency: currency.code,
-        category_id: selectedCategory.id,
+        category: selectedCategory.name,
         frequency,
         date: date.toISOString().split('T')[0],
       };
@@ -139,7 +139,7 @@ export const AddIncomeScreen = () => {
   const categoryOptions: DropdownOption[] = CATEGORIES.map(c => ({
     id: c.id,
     label: c.name,
-    value: c.id,
+    value: c.name,
     icon: c.icon
   }));
 
@@ -154,12 +154,12 @@ export const AddIncomeScreen = () => {
         
         <Dropdown
           label="Category"
-          value={selectedCategory.id}
+          value={selectedCategory.name}
           options={categoryOptions}
           showPicker={showCategoryPicker}
           onPress={handleCategoryPress}
           onSelect={(option) => {
-            const category = CATEGORIES.find(c => c.id === option.value)!;
+            const category = CATEGORIES.find(c => c.name === option.value)!;
             selectCategory(category);
           }}
           renderIcon={(option) => (

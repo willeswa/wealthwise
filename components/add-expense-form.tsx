@@ -1,16 +1,15 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { useNavigation } from '@react-navigation/native';
+import { format } from 'date-fns';
 import React, { useRef, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
+import { useExpenseStore } from '../store/expense-store';
 import { AmountInput } from './AmountInput';
 import { Button } from './Button';
+import { CustomDatePicker } from './CustomDatePicker';
 import { Dropdown, DropdownOption } from './Dropdown';
 import { CurrencyType, Numpad } from './Numpad';
 import { CategoryType } from './type';
-import { CustomDatePicker } from './CustomDatePicker';
-import { useExpenseStore } from '../store/expense-store';
-import { format } from 'date-fns';
-import { useNavigation } from '@react-navigation/native';
 
 const CURRENCIES: CurrencyType[] = [
   { symbol: '$', code: 'USD', name: 'US Dollar' },
@@ -82,7 +81,7 @@ export const AddExpenseScreen = () => {
       const expenseData = {
         amount: numericAmount,
         currency: currency.code,
-        category_id: selectedCategory.id,
+        category: selectedCategory.name,
         comment: comment.trim(),
         date: format(date, 'yyyy-MM-dd')
       };
@@ -133,7 +132,7 @@ export const AddExpenseScreen = () => {
   const categoryOptions: DropdownOption[] = CATEGORIES.map(c => ({
     id: c.id,
     label: c.name,
-    value: c.id,
+    value: c.name,
     icon: c.icon
   }));
 
@@ -148,12 +147,12 @@ export const AddExpenseScreen = () => {
         
         <Dropdown
           label="Category"
-          value={selectedCategory.id}
+          value={selectedCategory.name}
           options={categoryOptions}
           showPicker={showCategoryPicker}
           onPress={handleCategoryPress}
           onSelect={(option) => {
-            const category = CATEGORIES.find(c => c.id === option.value)!;
+            const category = CATEGORIES.find(c => c.name === option.value)!;
             selectCategory(category);
           }}
           renderIcon={(option) => (

@@ -13,7 +13,7 @@ export const initDatabase = async () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         amount DECIMAL(10,2) NOT NULL,
         currency TEXT NOT NULL,
-        category_id TEXT NOT NULL,
+        category TEXT NOT NULL,
         frequency TEXT NOT NULL,
         date TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -23,7 +23,7 @@ export const initDatabase = async () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         amount DECIMAL(10,2) NOT NULL,
         currency TEXT NOT NULL,
-        category_id TEXT NOT NULL,
+        category TEXT NOT NULL,
         comment TEXT,
         date TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

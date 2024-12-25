@@ -2,7 +2,7 @@ export interface Expense {
   id?: number;
   amount: number;
   currency: string;
-  category_id: string;
+  category: string;
   comment?: string;
   date: string;
   created_at?: string;

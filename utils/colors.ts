@@ -10,6 +10,6 @@ export const colors = {
   background: {
     main: "#FFFFFF",
     card: "#F8F9FD",
-    highlight: "#F0F1F6",
+    highlight: "#E6E8F0",
   }
 };
