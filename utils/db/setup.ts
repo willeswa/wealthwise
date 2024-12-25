@@ -35,6 +35,14 @@ export const initDatabase = async () => {
       );
 
       INSERT OR IGNORE INTO settings (key, value) VALUES ('default_currency', 'USD');
+
+      CREATE TABLE IF NOT EXISTS budget_categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        allocated DECIMAL(10,2) NOT NULL,
+        type TEXT NOT NULL CHECK(type IN ('want', 'need', 'savings')),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     console.log('Database initialization successful');
