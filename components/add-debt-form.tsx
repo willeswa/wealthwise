@@ -1,12 +1,15 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useRef, useState } from "react";
-import { StyleSheet, Text, TextInput, View, ScrollView, Animated } from "react-native";
+import { Animated, StyleSheet, Text, TextInput, View } from "react-native";
 import { AmountInput } from './AmountInput';
 import { Button } from './Button';
+import { CustomDatePicker } from './CustomDatePicker';
 import { Dropdown, DropdownOption } from './Dropdown';
 import { CurrencyType, Numpad } from './Numpad';
-import { CustomDatePicker } from './CustomDatePicker';
 import { ScrollIndicator } from './scroll-indicator';
+import { useDebtStore } from '../store/debt-store';
+import { useModalStore } from '../store/modal-store';
+import { DebtInput } from '../utils/types/debt';
 
 const CURRENCIES: CurrencyType[] = [
   { symbol: '$', code: 'USD', name: 'US Dollar' },
@@ -28,6 +31,9 @@ const FREQUENCIES: { label: string; value: FrequencyType }[] = [
 const PADDING_HORIZONTAL = 16;
 
 export const AddDebtScreen = () => {
+  const addNewDebt = useDebtStore(state => state.addNewDebt);
+  const { closeModal } = useModalStore();
+  
   const [amount, setAmount] = useState("0.00");
   const [creditorName, setCreditorName] = useState("");
   const [notes, setNotes] = useState("");
@@ -42,7 +48,7 @@ export const AddDebtScreen = () => {
   const creditorInputRef = useRef<TextInput>(null);
   const notesInputRef = useRef<TextInput>(null);
   const scrollY = React.useRef(new Animated.Value(0)).current;
-  const maxScroll = 300; // Adjust this value based on your content height
+  const maxScroll = 300; 
 
   const handleNumberPress = (num: string) => {
     if (num === "." && amount.includes(".")) return;
@@ -61,16 +67,34 @@ export const AddDebtScreen = () => {
     }
   };
 
-  const handleConfirm = () => {
-    console.log("Confirmed Debt:", {
-      amount,
-      creditorName,
-      notes,
-      currency,
-      frequency,
-      startDate,
-      dueDate,
-    });
+  const handleConfirm = async () => {
+    try {
+      const debtData: DebtInput = {
+        creditor: creditorName,
+        amount: parseFloat(amount),
+        interestRate: parseFloat(amount), // You'll need to add interest rate input
+        currency: currency.code,
+        startDate: startDate.toISOString().split('T')[0],
+        dueDate: dueDate.toISOString().split('T')[0],
+        frequency,
+        paymentAmount: parseFloat(amount), // You'll need to add payment amount input
+        notes: notes,
+      };
+
+      await addNewDebt(debtData);
+      
+      // Reset form
+      setAmount("0.00");
+      setCreditorName("");
+      setNotes("");
+      setFrequency('one-time');
+      setStartDate(new Date());
+      setDueDate(new Date());
+      
+      closeModal();
+    } catch (error) {
+      console.error('Error adding debt:', error);
+    }
   };
 
   const isFormValid = () => {

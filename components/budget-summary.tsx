@@ -14,36 +14,14 @@ import { Card } from "./card";
 import { useBudgetStore } from "../store/budget-store";
 import { colors } from "../utils/colors";
 import { formatCurrency } from "../utils/format";
+import { Legend } from "./legend";
 
-const Legend = ({ categories }: { categories: Array<any> }) => {
-  return (
-    <View style={styles.legendContainer}>
-      {categories.map((category, index) => (
-        <View
-          key={index}
-          style={[styles.legendItem, { borderLeftColor: category.color }]}
-        >
-          <View>
-            <Text style={styles.legendLabel}>{category.name}</Text>
-            <Text style={styles.legendValue}>
-              {category.percentage.toFixed(1)}%
-            </Text>
-          </View>
-        </View>
-      ))}
-    </View>
-  );
-};
-
-// Get screen width for calculations
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const CHART_WIDTH = Math.min(SCREEN_WIDTH - 64, 300); // Max width of 300, with padding
-const CHART_RADIUS = CHART_WIDTH * 0.4; // 40% of container width
+const CHART_WIDTH = Math.min(SCREEN_WIDTH - 64, 300);
+const CHART_RADIUS = CHART_WIDTH * 0.4;
 
 export const BudgetSummary = () => {
   const { summary, loading, error, fetchSummary } = useBudgetStore();
-
-  console.log(summary);
 
   useEffect(() => {
     fetchSummary();
@@ -75,8 +53,14 @@ export const BudgetSummary = () => {
   const pieData = summary.categories.map((category) => ({
     value: category.spent,
     color: category.color,
-    text: "", // Remove text from pie slices
+    text: "",
     label: category.name,
+  }));
+
+  const legendItems = summary.categories.map(category => ({
+    color: category.color,
+    label: category.name,
+    value: `${category.percentage.toFixed(1)}%`
   }));
 
   return (
@@ -111,7 +95,7 @@ export const BudgetSummary = () => {
             )}
           />
         </View>
-        <Legend categories={summary.categories} />
+        <Legend items={legendItems} />
       </View>
 
       <View style={styles.statsContainer}>
@@ -154,7 +138,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginVertical: 20,
     width: "100%",
-    maxWidth: CHART_WIDTH + 32, // Add some padding
+    maxWidth: CHART_WIDTH + 32,
     alignSelf: "center",
   },
   chartContainer: {
@@ -249,35 +233,6 @@ const styles = StyleSheet.create({
     color: "red",
     textAlign: "center",
     marginVertical: 20,
-  },
-  legendContainer: {
-    marginTop: 20,
-    width: "100%",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    justifyContent: "flex-start",
-    paddingHorizontal: 8,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    borderLeftWidth: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: colors.background.highlight,
-    borderRadius: 4,
-    minWidth: 70, // Minimum width to ensure readable content
-    marginBottom: 8,
-  },
-  legendLabel: {
-    fontSize: 12,
-    color: "black",
-    fontWeight: "900",
-  },
-  legendValue: {
-    fontSize: 11,
-    color: colors.text.primary,
   },
   content: {
     alignItems: "center",

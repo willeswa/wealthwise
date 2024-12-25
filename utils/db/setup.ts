@@ -43,6 +43,20 @@ export const initDatabase = async () => {
         type TEXT NOT NULL CHECK(type IN ('want', 'need', 'savings')),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS debts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        creditor TEXT NOT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        interest_rate DECIMAL(5,2) NOT NULL,
+        currency TEXT NOT NULL,
+        start_date TEXT NOT NULL,
+        due_date TEXT NOT NULL,
+        frequency TEXT NOT NULL,
+        payment_amount DECIMAL(10,2) NOT NULL,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     console.log('Database initialization successful');
