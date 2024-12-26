@@ -1,6 +1,7 @@
 import { AddExpenseScreen } from "@/components/add-expense-form";
 import { AddIncomeScreen } from "@/components/add-income-form";
 import { AddDebtScreen } from "@/components/add-debt-form";
+import { AddInvestmentScreen } from "@/components/add-investment-form";
 import { useModalStore } from "@/store/modal-store";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -17,7 +18,7 @@ export function ActionModal() {
       <View style={styles.modalContainer}>
         <View style={[
           styles.modalContent,
-          currentAction === "add-debt" && styles.modalContentTall
+          (currentAction === "add-debt" || currentAction === "add-investment") && styles.modalContentTall
         ]}>
           <Pressable style={styles.closeButton} onPress={closeModal}>
             <Text style={styles.closeButtonText}>✕</Text>
@@ -26,6 +27,7 @@ export function ActionModal() {
           {currentAction === "add-income" && <AddIncomeScreen />}
           {currentAction === "add-expense" && <AddExpenseScreen />}
           {currentAction === "add-debt" && <AddDebtScreen />}
+          {currentAction === "add-investment" && <AddInvestmentScreen />}
         </View>
       </View>
     </Modal>

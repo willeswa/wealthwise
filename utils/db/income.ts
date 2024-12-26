@@ -1,5 +1,5 @@
 import { Income, IncomeInput } from '../types/income';
-import { getDatabase } from './setup';
+import { getDatabase } from './utils/setup';
 
 export const addIncome = async (income: IncomeInput): Promise<number> => {
   try {

@@ -1,79 +1,114 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface AmountInputProps {
   amount: string;
   currencySymbol: string;
+  label?: string;
+  onChangeValue?: (value: string) => void;
+  useSystemKeyboard?: boolean;
   onPress?: () => void;
-  isActive?: boolean;
-  optional?: boolean;
 }
 
 const formatAmount = (amount: string) => {
-  // Remove any existing commas first
   const cleanAmount = amount.replace(/,/g, '');
-  
-  // Split into whole and decimal parts
   const [whole, decimal] = cleanAmount.split('.');
-  
-  // Add commas to whole number part
   const formattedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  
-  // Return formatted number with decimal part if it exists
   return decimal ? `${formattedWhole}.${decimal}` : formattedWhole;
 };
 
 export const AmountInput: React.FC<AmountInputProps> = ({ 
   amount, 
-  currencySymbol, 
-  onPress, 
-  isActive,
-  optional 
+  currencySymbol,
+  label,
+  onChangeValue,
+  useSystemKeyboard = false,
+  onPress
 }) => {
-  return (
-    <TouchableOpacity 
-      style={[
-        styles.amountContainer,
-      ]}
-      onPress={onPress}
-    >
-      <Text style={styles.currencySymbol}>{currencySymbol}</Text>
-      <Text 
-        style={[
-          styles.amountInput,
-        ]}
-        adjustsFontSizeToFit
-        numberOfLines={1}
-      >
-        {formatAmount(amount)}
-      </Text>
-    </TouchableOpacity>
+  const handleChangeText = (text: string) => {
+    const sanitizedText = text.replace(/[^0-9.]/g, '');
+    const parts = sanitizedText.split('.');
+    const formattedText = parts.length > 2 
+      ? `${parts[0]}.${parts.slice(1).join('')}`
+      : sanitizedText;
+
+    onChangeValue?.(formattedText);
+  };
+
+  const content = (
+    <View style={styles.amountContainer}>
+      {label && <Text style={styles.label}>{label}</Text>}
+      <View style={styles.inputContainer}>
+        <View style={styles.currencyContainer}>
+          <Text style={styles.currencySymbol}>{currencySymbol}</Text>
+        </View>
+        {useSystemKeyboard ? (
+          <TextInput
+            style={styles.amountInput}
+            value={formatAmount(amount)}
+            onChangeText={handleChangeText}
+            keyboardType="decimal-pad"
+            placeholder="0.00"
+          />
+        ) : (
+          <Text 
+            style={[styles.amountInput, styles.amountText]}
+            adjustsFontSizeToFit
+            numberOfLines={1}
+          >
+            {formatAmount(amount)}
+          </Text>
+        )}
+      </View>
+    </View>
   );
+
+  if (!useSystemKeyboard && onPress) {
+    return (
+      <TouchableOpacity onPress={onPress}>
+        {content}
+      </TouchableOpacity>
+    );
+  }
+
+  return content;
 };
 
 const styles = StyleSheet.create({
   amountContainer: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
     backgroundColor: '#F5F6FA',
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 16,
-    minHeight: 100, // Add minimum height to prevent layout shifts
+    minHeight: 80,
+  },
+  currencyContainer: {
+    justifyContent: 'center',
+    paddingTop: 8, // Align with the amount text
   },
   currencySymbol: {
-    fontSize: 24,
+    fontSize: 16, // Smaller font size
     color: '#8A8A8A',
     marginRight: 4,
   },
   amountInput: {
-    fontSize: 53,
-    fontWeight: "bold",
-    textAlign: "center",
-    color: "#000",
-    flexShrink: 1, // Allow text to shrink
-    maxWidth: '80%', // Prevent text from getting too close to edges
+    flex: 1,
+    fontSize: 32,
+    color: '#000',
+    paddingLeft: 4, // Add some spacing from currency
+  },
+  amountText: {
+    fontWeight: 'bold',
+    textAlign: 'left',
   },
 });

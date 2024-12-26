@@ -154,6 +154,7 @@ export const AddIncomeScreen = () => {
         <AmountInput 
           amount={amount}
           currencySymbol={currency.symbol}
+          onPress={() => {/* handle numpad open */}}
         />
         
         <Dropdown

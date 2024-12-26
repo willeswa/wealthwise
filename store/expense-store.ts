@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { Expense, ExpenseInput } from '../utils/types/expense';
 import { addExpense, deleteExpense, getExpenses } from '../utils/db/expense';
-import { getDefaultCurrency, setDefaultCurrency } from '../utils/db/settings';
+import { getDefaultCurrency, setDefaultCurrency } from '../utils/db/utils/settings';
+import { Expense, ExpenseInput } from '../utils/types/expense';
 import { useBudgetStore } from './budget-store';
 
 interface ExpenseStore {

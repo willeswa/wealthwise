@@ -1,7 +1,7 @@
 import { BudgetCategory, BudgetSummary } from '../types/budget';
-import { getDatabase } from './setup';
-import { getIncomes } from './income';
 import { Expense } from '../types/expense';
+import { getIncomes } from './income';
+import { getDatabase } from './utils/setup';
 
 // Helper to determine category type
 const getCategoryType = (category: string): 'want' | 'need' | 'savings' | 'debt' => {

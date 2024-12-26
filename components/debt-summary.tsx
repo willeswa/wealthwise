@@ -27,15 +27,18 @@ export const DebtSummary = ({ onAddNew }: Props) => {
     fetchSummary();
   }, []);
 
+
   const chartColors = [
-    "#4B7BE5", // blue
-    "#FF6B6B", // red
-    "#4ECDC4", // teal
-    "#45B7D1", // cyan
-    "#96CEB4", // green
-    "#FF9F1C", // orange
-    "#9D4EDD", // purple
-    "#2AB7CA", // light blue
+    '#4CAF50',  // green
+    '#F44336',  // red
+    '#2196F3',  // blue
+    '#FFC107',  // amber
+    '#9C27B0',  // purple
+    '#00BCD4',  // cyan
+    '#FF5722',  // deep orange
+    '#607D8B',  // blue grey
+    '#E91E63',  // pink
+    '#795548'   // brown
   ];
 
   const getChartData = () => {

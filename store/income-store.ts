@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { Income, IncomeInput } from '../utils/types/income';
 import { addIncome, deleteIncome, getIncomes } from '../utils/db/income';
-import { getDefaultCurrency, setDefaultCurrency } from '../utils/db/settings';
+import { getDefaultCurrency, setDefaultCurrency } from '../utils/db/utils/settings';
+import { Income, IncomeInput } from '../utils/types/income';
 import { useBudgetStore } from './budget-store';
 
 interface IncomeStore {

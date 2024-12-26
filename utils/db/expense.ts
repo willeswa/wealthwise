@@ -1,5 +1,5 @@
 import { Expense, ExpenseInput } from '../types/expense';
-import { getDatabase } from './setup';
+import { getDatabase } from './utils/setup';
 
 export const addExpense = async (expense: ExpenseInput): Promise<number> => {
   try {

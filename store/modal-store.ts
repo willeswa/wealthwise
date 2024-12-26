@@ -1,17 +1,17 @@
-import { create } from 'zustand'
+import { create } from 'zustand';
 
-export type Action = "add-income" | "add-expense" | "add-investment" | "add-debt" | null;
+type ModalAction = 'add-income' | 'add-expense' | 'add-debt' | 'add-investment' | null;
 
-interface ModalState {
-  isModalVisible: boolean
-  currentAction: Action
-  openModal: (action: Action) => void
-  closeModal: () => void
+interface ModalStore {
+  isModalVisible: boolean;
+  currentAction: ModalAction;
+  openModal: (action: ModalAction) => void;
+  closeModal: () => void;
 }
 
-export const useModalStore = create<ModalState>((set) => ({
+export const useModalStore = create<ModalStore>((set) => ({
   isModalVisible: false,
   currentAction: null,
   openModal: (action) => set({ isModalVisible: true, currentAction: action }),
-  closeModal: () => set({ isModalVisible: false, currentAction: null })
-}))
+  closeModal: () => set({ isModalVisible: false, currentAction: null }),
+}));

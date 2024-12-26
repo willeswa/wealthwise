@@ -1,6 +1,6 @@
 import { Debt, DebtInput, DebtSummary } from '../types/debt';
-import { getDatabase } from './setup';
 import { getIncomes } from './income';
+import { getDatabase } from './utils/setup';
 
 export const addDebt = async (debt: DebtInput): Promise<number> => {
   const db = getDatabase();
