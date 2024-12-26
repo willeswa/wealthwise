@@ -10,6 +10,8 @@ import { ScrollIndicator } from './scroll-indicator';
 import { useDebtStore } from '../store/debt-store';
 import { useModalStore } from '../store/modal-store';
 import { DebtInput } from '../utils/types/debt';
+import Slider from '@react-native-community/slider';
+import { NumberStepper } from './NumberStepper';
 
 const CURRENCIES: CurrencyType[] = [
   { symbol: '$', code: 'USD', name: 'US Dollar' },
@@ -34,7 +36,7 @@ export const AddDebtScreen = () => {
   const addNewDebt = useDebtStore(state => state.addNewDebt);
   const { closeModal } = useModalStore();
   
-  const [amount, setAmount] = useState("0.00");
+  const [amount, setAmount] = useState(""); // Changed from "0.00" to empty string
   const [creditorName, setCreditorName] = useState("");
   const [notes, setNotes] = useState("");
   const [currency, setCurrency] = useState<CurrencyType>(CURRENCIES[0]);
@@ -44,6 +46,9 @@ export const AddDebtScreen = () => {
   const [dueDate, setDueDate] = useState(new Date());
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showDueDatePicker, setShowDueDatePicker] = useState(false);
+  const [interestRate, setInterestRate] = useState(15); // Default to 15%
+  const [paymentAmount, setPaymentAmount] = useState("0.00");
+  const [activeInput, setActiveInput] = useState<'payment'>('payment');
   
   const creditorInputRef = useRef<TextInput>(null);
   const notesInputRef = useRef<TextInput>(null);
@@ -51,19 +56,19 @@ export const AddDebtScreen = () => {
   const maxScroll = 300; 
 
   const handleNumberPress = (num: string) => {
-    if (num === "." && amount.includes(".")) return;
-    if (amount === "0.00") {
-      setAmount(num === "." ? "0." : num);
+    if (num === "." && paymentAmount.includes(".")) return;
+    if (paymentAmount === "0.00") {
+      setPaymentAmount(num === "." ? "0." : num);
     } else {
-      setAmount((prev) => prev + num);
+      setPaymentAmount((prev) => prev + num);
     }
   };
 
   const handleDelete = () => {
-    if (amount.length <= 1 || amount === "0.") {
-      setAmount("0.00");
+    if (paymentAmount.length <= 1 || paymentAmount === "0.") {
+      setPaymentAmount("0.00");
     } else {
-      setAmount((prev) => prev.slice(0, -1));
+      setPaymentAmount((prev) => prev.slice(0, -1));
     }
   };
 
@@ -71,20 +76,22 @@ export const AddDebtScreen = () => {
     try {
       const debtData: DebtInput = {
         creditor: creditorName,
-        amount: parseFloat(amount),
-        interestRate: parseFloat(amount), // You'll need to add interest rate input
+        amount: amount ? parseFloat(amount) : null,  // Convert empty string to null
+        interest_rate: interestRate,
         currency: currency.code,
         startDate: startDate.toISOString().split('T')[0],
         dueDate: dueDate.toISOString().split('T')[0],
         frequency,
-        paymentAmount: parseFloat(amount), // You'll need to add payment amount input
-        notes: notes,
+        payment_amount: parseFloat(paymentAmount),
+        notes: notes || undefined,
       };
 
       await addNewDebt(debtData);
       
       // Reset form
-      setAmount("0.00");
+      setAmount("");  // Reset to empty string instead of "0.00"
+      setInterestRate(15);
+      setPaymentAmount("0.00");
       setCreditorName("");
       setNotes("");
       setFrequency('one-time');
@@ -98,13 +105,11 @@ export const AddDebtScreen = () => {
   };
 
   const isFormValid = () => {
-    return (
-      amount !== "0.00" && 
-      amount !== "" && 
-      creditorName.trim() !== "" &&
-      startDate &&
-      dueDate
-    );
+    return paymentAmount !== "0.00" && 
+           paymentAmount !== "" && 
+           creditorName.trim() !== "" &&
+           startDate &&
+           dueDate;
   };
 
   const frequencyOptions: DropdownOption[] = FREQUENCIES.map(f => ({
@@ -112,6 +117,11 @@ export const AddDebtScreen = () => {
     value: f.value,
     icon: f.value === 'one-time' ? 'calendar-blank' : 'calendar-sync'
   }));
+
+  // Add this new handler for smoother slider interaction
+  const handleSliderComplete = (value: number) => {
+    setInterestRate(Math.round(value));
+  };
 
   return (
     <View style={styles.container}>
@@ -127,11 +137,23 @@ export const AddDebtScreen = () => {
       >
         <View style={styles.contentContainer}>
           <Text style={styles.title}>Add Debt</Text>
+          
           <AmountInput 
-            amount={amount}
+            amount={paymentAmount}
             currencySymbol={currency.symbol}
           />
-          
+
+          <Numpad
+            onNumberPress={handleNumberPress}
+            onDelete={handleDelete}
+            onCurrencySelect={setCurrency}
+            currencies={CURRENCIES}
+            selectedCurrency={currency}
+            date={startDate}
+            onDatePress={() => setShowStartDatePicker(true)}
+            showDatePicker={showStartDatePicker}
+          />
+
           <TextInput
             ref={creditorInputRef}
             style={styles.input}
@@ -139,6 +161,17 @@ export const AddDebtScreen = () => {
             value={creditorName}
             onChangeText={setCreditorName}
           />
+
+          <View style={styles.inputGroup}>
+            <TextInput
+              style={[styles.input, styles.currencyInput]}
+              placeholder="Total Amount (Optional)"
+              value={amount}
+              onChangeText={setAmount}
+              keyboardType="decimal-pad"
+            />
+            <Text style={styles.currencySymbol}>{currency.symbol}</Text>
+          </View>
 
           <Dropdown
             label="Payment Frequency"
@@ -159,6 +192,15 @@ export const AddDebtScreen = () => {
             )}
           />
 
+          <NumberStepper
+            value={interestRate}
+            onChange={setInterestRate}
+            min={0}
+            max={50}
+            step={1}
+            label="Interest Rate"
+          />
+
           <TextInput
             ref={notesInputRef}
             style={[styles.input, styles.notesInput]}
@@ -167,17 +209,6 @@ export const AddDebtScreen = () => {
             onChangeText={setNotes}
             multiline
             numberOfLines={3}
-          />
-
-          <Numpad
-            onNumberPress={handleNumberPress}
-            onDelete={handleDelete}
-            onCurrencySelect={setCurrency}
-            currencies={CURRENCIES}
-            selectedCurrency={currency}
-            date={startDate}
-            onDatePress={() => setShowStartDatePicker(true)}
-            showDatePicker={showStartDatePicker}
           />
         </View>
       </Animated.ScrollView>
@@ -228,7 +259,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 200, // Add extra padding at bottom for scrolling
+    paddingBottom: 120, // Reduced padding since numpad is no longer at bottom
   },
   contentContainer: {
     paddingHorizontal: PADDING_HORIZONTAL,
@@ -260,5 +291,59 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderTopColor: '#EAEAEA',
     backgroundColor: '#FFFFFF',
+  },
+  amountSection: {
+    marginBottom: 24,
+  },
+  sectionLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  inputGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    borderBottomWidth: 1,
+    borderColor: '#EAEAEA',
+  },
+  currencyInput: {
+    flex: 1,
+    marginBottom: 0,
+    borderBottomWidth: 0,
+  },
+  currencySymbol: {
+    fontSize: 16,
+    color: '#666',
+    marginLeft: 8,
+    paddingBottom: 8,
+  },
+  sliderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',  // Center the header
+    marginBottom: 8,
+  },
+  sliderValue: {
+    fontSize: 28,  // Increased size
+    fontWeight: '600',
+    color: '#232D59',
+    marginRight: 8,
+    minWidth: 70,  // Ensure consistent width
+    textAlign: 'right',
+  },
+  sliderLabel: {
+    fontSize: 16,
+    color: '#666',
+  },
+  sliderLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    marginTop: 8,
+  },
+  sliderMinMax: {
+    fontSize: 12,
+    color: '#666',
   },
 });

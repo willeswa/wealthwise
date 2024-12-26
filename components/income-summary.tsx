@@ -78,7 +78,7 @@ export const IncomeSummary = ({ incomes, loading, error, defaultCurrency, onAddN
             <FrequencyBadge frequency={item.frequency} />
           </View>
         ))}
-        {incomes.length > 3 && (
+        {incomes.length > 0 && (
           <Pressable 
             style={styles.showAllButton}
             onPress={() => console.log('Show all income pressed')}

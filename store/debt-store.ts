@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Debt, DebtInput, DebtSummary } from '../utils/types/debt';
 import { addDebt, getDebts, getDebtSummary } from '../utils/db/debt';
+import { useBudgetStore } from './budget-store';
 
 interface DebtStore {
   debts: Debt[];
@@ -52,7 +53,8 @@ export const useDebtStore = create<DebtStore>((set) => ({
       await addDebt(debtData);
       await Promise.all([
         useDebtStore.getState().fetchDebts(),
-        useDebtStore.getState().fetchSummary()
+        useDebtStore.getState().fetchSummary(),
+        useBudgetStore.getState().fetchSummary(),
       ]);
     } catch (error) {
       set({ error: 'Failed to add debt' });

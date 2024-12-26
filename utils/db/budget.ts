@@ -4,9 +4,9 @@ import { getIncomes } from './income';
 import { Expense } from '../types/expense';
 
 // Helper to determine category type
-const getCategoryType = (category: string): 'want' | 'need' | 'savings' => {
+const getCategoryType = (category: string): 'want' | 'need' | 'savings' | 'debt' => {
   // You can customize this mapping based on your needs
-  const categoryMap: Record<string, 'want' | 'need' | 'savings'> = {
+  const categoryMap: Record<string, 'want' | 'need' | 'savings' | 'debt'> = {
     'Food': 'need',
     'Transport': 'need',
     'Bills': 'need',
@@ -18,7 +18,8 @@ const getCategoryType = (category: string): 'want' | 'need' | 'savings' => {
     'Travel': 'want',
     'Investment': 'savings',
     'Emergency Fund': 'savings',
-    'Retirement': 'savings'
+    'Retirement': 'savings',
+    'Debt': 'debt'
   };
 
   return categoryMap[category] || 'want'; // Default to 'want' if category not found
@@ -48,21 +49,24 @@ const categoryColors: Record<string, string> = {
   'Travel': '#E6E6FA',
   'Investment': '#98FB98',
   'Emergency Fund': '#FFA07A',
-  'Retirement': '#87CEFA'
+  'Retirement': '#87CEFA',
+  'Debt': '#FF4040'  // Adding a red color for debt
 };
 
 export const getBudgetSummary = async (): Promise<BudgetSummary> => {
   const db = getDatabase();
   
   try {
-    // Get all incomes and expenses
-    const [incomes, expenses] = await Promise.all([
+    // Get all incomes, expenses and debts
+    const [incomes, expenses, debts] = await Promise.all([
       getIncomes(),
-      db.getAllAsync<Expense>('SELECT * FROM expenses')
+      db.getAllAsync<Expense>('SELECT * FROM expenses'),
+      db.getAllAsync('SELECT * FROM debts')
     ]);
 
     const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const totalDebt = debts.reduce((sum: number, debt: any) => sum + debt.payment_amount, 0);
 
     // Group expenses by category and calculate totals
     const categoryGroups = expenses.reduce((acc, expense) => {
@@ -75,7 +79,7 @@ export const getBudgetSummary = async (): Promise<BudgetSummary> => {
       }
       acc[expense.category].spent += expense.amount;
       return acc;
-    }, {} as Record<string, { spent: number; currency: string; type: 'want' | 'need' | 'savings' }>);
+    }, {} as Record<string, { spent: number; currency: string; type: 'want' | 'need' | 'savings' | 'debt' }>);
 
     // Transform into categories array
     const categories = Object.entries(categoryGroups).map(([name, data]) => ({
@@ -88,17 +92,30 @@ export const getBudgetSummary = async (): Promise<BudgetSummary> => {
       color: categoryColors[name] || getDefaultColor(name) // Add color property
     }));
 
-    // Calculate distribution
+    // Add debt as a category
+    if (totalDebt > 0) {
+      categories.push({
+        name: 'Debt',
+        allocated: totalDebt,
+        spent: totalDebt,
+        percentage: (totalDebt / (totalExpenses + totalDebt)) * 100,
+        type: 'debt',
+        currency: incomes[0]?.currency || 'USD',
+        color: categoryColors['Debt']
+      });
+    }
+
+    // Calculate distribution including debt
     const distribution = categories.reduce((acc, category) => {
-      const key = category.type === 'savings' ? 'savings' : `${category.type}s` as const;
-      acc[key as keyof typeof acc] += category.allocated;
+      const key = category.type as keyof typeof acc;
+      acc[key] = (acc[key] || 0) + category.allocated;
       return acc;
-    }, { wants: 0, needs: 0, savings: 0 });
+    }, { wants: 0, needs: 0, savings: 0, debt: 0 });
 
     return {
       totalIncome,
-      totalExpenses,
-      unallocatedAmount: totalIncome - totalExpenses,
+      totalExpenses: totalExpenses + totalDebt, // Include debt in total expenses
+      unallocatedAmount: totalIncome - (totalExpenses + totalDebt),
       categories: categories.sort((a, b) => b.spent - a.spent), // Sort by spent amount
       distribution,
       currency: incomes[0]?.currency || 'USD' // Default to USD if no income

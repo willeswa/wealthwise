@@ -47,15 +47,15 @@ export const initDatabase = async () => {
       CREATE TABLE IF NOT EXISTS debts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         creditor TEXT NOT NULL,
-        amount DECIMAL(10,2) NOT NULL,
-        interest_rate DECIMAL(5,2) NOT NULL,
+        amount REAL DEFAULT NULL,
+        interest_rate REAL NOT NULL DEFAULT 0,
         currency TEXT NOT NULL,
-        start_date TEXT NOT NULL,
-        due_date TEXT NOT NULL,
+        start_date TEXT,
+        due_date TEXT,
         frequency TEXT NOT NULL,
-        payment_amount DECIMAL(10,2) NOT NULL,
+        payment_amount REAL NOT NULL,
         notes TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
 

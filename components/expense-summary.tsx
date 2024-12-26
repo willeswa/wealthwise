@@ -97,7 +97,7 @@ export const ExpenseSummary = ({ expenses, totalIncome, loading, error, defaultC
        
           </View>
         ))}
-        {categoryStats.length > 3 && (
+        {categoryStats.length > 0 && (
           <Pressable 
             style={styles.showAllButton}
             onPress={() => console.log('Show all expenses pressed')}

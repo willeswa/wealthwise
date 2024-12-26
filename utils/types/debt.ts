@@ -1,13 +1,13 @@
 export interface Debt {
   id?: number;
   creditor: string;
-  amount: number;
-  interestRate: number;
+  amount?: number | null;  // Make amount optional
+  interest_rate: number;
   currency: string;
   startDate: string;
   dueDate: string;
   frequency: 'one-time' | 'weekly' | 'monthly' | 'yearly';
-  paymentAmount: number;
+  payment_amount: number;
   notes?: string;
   created_at?: string;
 }

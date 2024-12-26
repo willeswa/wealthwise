@@ -38,7 +38,7 @@ export const BudgetSummary = () => {
   if (!summary || summary.categories.length === 0) {
     return (
      <Card>
-      <Text style={styles.title}>Budget Overview</Text>
+      <Text style={styles.title}>Monthly Budget Overview</Text>
        <EmptyState
         icon={<Ionicons name="wallet-outline" size={34} color="#8A8A8A" />}
         message="No budget data available."
@@ -66,7 +66,7 @@ export const BudgetSummary = () => {
   return (
     <Card>
       <View style={styles.header}>
-        <Text style={styles.title}>Budget Overview</Text>
+        <Text style={styles.title}> Monthly Budget Overview</Text>
         <Pressable
           style={styles.showAllButton}
           onPress={() => console.log("Show all expenses pressed")}
@@ -90,7 +90,7 @@ export const BudgetSummary = () => {
                 <Text style={styles.centerAmount}>
                   {formatCurrency(summary.unallocatedAmount, summary.currency)}
                 </Text>
-                <Text style={styles.centerText}>Unallocated</Text>
+                <Text style={styles.centerText}>{summary.unallocatedAmount > 0 ? `Unallocated` : `Overspent`}</Text>
               </View>
             )}
           />

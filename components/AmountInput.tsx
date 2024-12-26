@@ -1,9 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
 interface AmountInputProps {
   amount: string;
   currencySymbol: string;
+  onPress?: () => void;
+  isActive?: boolean;
+  optional?: boolean;
 }
 
 const formatAmount = (amount: string) => {
@@ -20,18 +23,31 @@ const formatAmount = (amount: string) => {
   return decimal ? `${formattedWhole}.${decimal}` : formattedWhole;
 };
 
-export const AmountInput: React.FC<AmountInputProps> = ({ amount, currencySymbol }) => {
+export const AmountInput: React.FC<AmountInputProps> = ({ 
+  amount, 
+  currencySymbol, 
+  onPress, 
+  isActive,
+  optional 
+}) => {
   return (
-    <View style={styles.amountContainer}>
+    <TouchableOpacity 
+      style={[
+        styles.amountContainer,
+      ]}
+      onPress={onPress}
+    >
       <Text style={styles.currencySymbol}>{currencySymbol}</Text>
       <Text 
-        style={styles.amountInput}
+        style={[
+          styles.amountInput,
+        ]}
         adjustsFontSizeToFit
         numberOfLines={1}
       >
         {formatAmount(amount)}
       </Text>
-    </View>
+    </TouchableOpacity>
   );
 };
 

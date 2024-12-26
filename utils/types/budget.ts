@@ -1,4 +1,4 @@
-export type CategoryType = 'want' | 'need' | 'savings';
+export type CategoryType = 'want' | 'need' | 'savings' | 'debt';
 
 export interface BudgetCategory {
   id?: number;
@@ -18,12 +18,13 @@ export interface BudgetSummary {
     percentage: number;
     spent: number;
     type: CategoryType;
-    color: string;  // Add this line
+    color: string;
   }>;
   distribution: {
     wants: number;
     needs: number;
     savings: number;
+    debt: number;
   };
-  currency: string;  // Add this line
+  currency: string;
 }

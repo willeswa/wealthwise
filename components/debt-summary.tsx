@@ -1,6 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect } from "react";
-import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+} from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 import { useDebtStore } from "../store/debt-store";
 import { Card } from "./card";
@@ -32,23 +39,20 @@ export const DebtSummary = ({ onAddNew }: Props) => {
   ];
 
   const getChartData = () => {
-    if (!summary?.debts) return { barData: [], lineData: [] };
+    if (!summary?.debts) return { barData: [] };
 
     return {
-      barData: summary.debts.map((debt, index) => ({
-        value: debt.amount,
-        label: debt.creditor,
-        frontColor: chartColors[index % chartColors.length],
-      })),
-      lineData: summary.debts.map((debt) => ({
-        value: debt.interestRate,
-        dataPointText: `${debt.interestRate}%`,
-        label: debt.creditor,
-      })),
+      barData: summary?.debts.map((debt, index) => {
+        return {
+          value: debt.payment_amount ?? 0,
+          label: debt.creditor,
+          frontColor: chartColors[index % chartColors.length],
+        };
+      }),
     };
   };
 
-  const { barData, lineData } = getChartData();
+  const { barData } = getChartData();
 
   const renderCharts = () => {
     const chartWidth = width * 0.75; // Reduced from 0.85
@@ -90,7 +94,16 @@ export const DebtSummary = ({ onAddNew }: Props) => {
 
   return (
     <Card>
-      <Text style={styles.cardTitle}>Debt Summary</Text>
+      <View style={styles.header}>
+        <Text style={styles.cardTitle}>Monthly Debt Summary</Text>
+        <Pressable
+          style={styles.showAllButton}
+          onPress={() => console.log("Show all debts pressed")}
+        >
+          <Text style={styles.showAllText}>Manage Debt</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+        </Pressable>
+      </View>
       {loading ? (
         <Text>Loading...</Text>
       ) : !summary || summary.activeDebts === 0 ? (
@@ -107,7 +120,7 @@ export const DebtSummary = ({ onAddNew }: Props) => {
           <View style={styles.summarySection}>
             {/* Total Debt Overview */}
             <View style={styles.mainStatCard}>
-              <Text style={styles.mainStatLabel}>Total Debt</Text>
+              <Text style={styles.mainStatLabel}>Total Monthly Repayments</Text>
               <Text style={styles.mainStatValue}>
                 ${summary.totalOutstanding.toLocaleString()}
               </Text>
@@ -126,25 +139,23 @@ export const DebtSummary = ({ onAddNew }: Props) => {
             <View style={styles.insightsContainer}>
               {/* Highest Interest Rate Debt */}
               <View style={[styles.insightCard]}>
-            
                 <View style={styles.insightContent}>
                   <Text style={styles.insightLabel}>Highest Interest</Text>
                   <Text style={styles.insightTitle}>
                     {summary.highestInterestDebt?.creditor || "N/A"}
                   </Text>
                   <Text style={styles.insightValue}>
-                    {summary.highestInterestDebt?.interestRate || 0}% APR
+                    {summary.highestInterestDebt?.interest_rate || 0}% APR
                   </Text>
                 </View>
               </View>
 
               {/* Next Payment */}
               <View style={[styles.insightCard]}>
-               
                 <View style={styles.insightContent}>
                   <Text style={styles.insightLabel}>Next Payment</Text>
                   <Text style={styles.insightTitle}>
-                    ${summary.upcomingPayment?.amount || 0}
+                    ${summary.highestInterestDebt?.payment_amount || 0}
                   </Text>
                   <Text style={styles.insightValue}>
                     Due{" "}
@@ -163,14 +174,34 @@ export const DebtSummary = ({ onAddNew }: Props) => {
 };
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
   cardTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#232D59",
-    marginBottom: 12,
+    flex: 1,
+  },
+  showAllButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-end",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: colors.background.highlight,
+    borderRadius: 8,
+    gap: 4,
+  },
+  showAllText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.accent,
   },
   chartsContainer: {
-   
     paddingVertical: 16,
     paddingHorizontal: 8,
     backgroundColor: "#F5F6FA",
