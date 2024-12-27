@@ -32,7 +32,6 @@ export const Legend = ({ items }: LegendProps) => {
 
 const styles = StyleSheet.create({
   legendContainer: {
-    marginTop: 20,
     width: "100%",
     flexDirection: "row",
     flexWrap: "wrap",

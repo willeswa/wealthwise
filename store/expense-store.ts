@@ -1,8 +1,10 @@
 import { create } from 'zustand';
-import { addExpense, deleteExpense, getExpenses, getExpenseCategories } from '../utils/db/expense';
+import { addExpense, deleteExpense, getExpenses, getExpenseCategories, updateExpenseStatus } from '../utils/db/expense';
 import { getDefaultCurrency, setDefaultCurrency } from '../utils/db/utils/settings';
-import { Expense, ExpenseInput, ExpenseCategory } from '../utils/types/expense';
+import { Expense, ExpenseInput, ExpenseCategory, ExpenseStatus } from '../utils/types/expense';
 import { useBudgetStore } from './budget-store';
+import { useDebtStore } from './debt-store';
+import { useInvestmentStore } from './investment-store';
 
 interface ExpenseStore {
   expenses: Expense[];
@@ -16,6 +18,7 @@ interface ExpenseStore {
   removeExpense: (id: number) => Promise<void>;
   setDefaultCurrency: (currency: string) => Promise<void>;
   fetchCategories: () => Promise<void>;
+  updateStatus: (id: number, status: ExpenseStatus, paidDate?: string) => Promise<void>;
 }
 
 export const useExpenseStore = create<ExpenseStore>((set) => ({
@@ -34,6 +37,7 @@ export const useExpenseStore = create<ExpenseStore>((set) => ({
         getDefaultCurrency(),
         getExpenseCategories()
       ]);
+      console.log('Fetched expenses:', currency);
       set({ 
         expenses: data, 
         defaultCurrency: currency, 
@@ -54,7 +58,11 @@ export const useExpenseStore = create<ExpenseStore>((set) => ({
       await addExpense(expenseData);
       const updatedExpenses = await getExpenses();
       set({ expenses: updatedExpenses });
-      await useBudgetStore.getState().fetchSummary();
+      await Promise.all([
+        useBudgetStore.getState().fetchSummary(),
+        useInvestmentStore.getState().getPendingContributions(),
+        useDebtStore.getState().fetchSummary()
+      ]);
     } catch (error) {
       set({ error: 'Failed to add expense' });
       throw error;
@@ -94,6 +102,28 @@ export const useExpenseStore = create<ExpenseStore>((set) => ({
       set({ categories });
     } catch (error) {
       console.error('Error fetching categories:', error);
+    }
+  },
+
+  updateStatus: async (id: number, status: ExpenseStatus, paidDate?: string) => {
+    try {
+      set({ loading: true, error: null });
+      await updateExpenseStatus(id, status, paidDate);
+      
+      // Fetch updated expenses
+      const updatedExpenses = await getExpenses();
+      set({ expenses: updatedExpenses });
+
+      // Update related stores
+      await Promise.all([
+        useBudgetStore.getState().fetchSummary(),
+        useDebtStore.getState().fetchSummary() // Add this line
+      ]);
+    } catch (error) {
+      set({ error: 'Failed to update expense status' });
+      throw error;
+    } finally {
+      set({ loading: false });
     }
   },
 }));

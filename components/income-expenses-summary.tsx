@@ -42,7 +42,7 @@ export const IncomeExpensesSummary = ({ onAddNew }: Prop) => {
   const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);
 
   return (
-    <Card>
+    <Card variant={selectedOption === "Income" ? "income" : "expense"}>
       <SwitchPill
         options={["Income", "Expenses"]}
         selected={selectedOption}

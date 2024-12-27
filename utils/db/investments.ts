@@ -1,4 +1,4 @@
-import { Investment, InvestmentInput, InvestmentType, Contribution, ContributionInput, RiskLevel, Liquidity } from '../types/investment';
+import { Investment, InvestmentInput, InvestmentType, Contribution, ContributionInput, RiskLevel, Liquidity, InvestmentPerformance } from '../types/investment';
 import { getDatabase } from './utils/setup';
 
 export const addInvestment = async (investment: InvestmentInput): Promise<number> => {
@@ -27,21 +27,83 @@ export const addInvestment = async (investment: InvestmentInput): Promise<number
 export const addContribution = async (contribution: ContributionInput): Promise<number> => {
   try {
     const db = getDatabase();
-    const result = await db.runAsync(
-      `INSERT INTO contributions (
-        investment_id, amount, contribution_date, frequency, notes
-      ) VALUES (?, ?, ?, ?, ?)`,
-      [
-        contribution.investment_id,
-        contribution.amount,
-        contribution.contribution_date,
-        contribution.frequency,
-        contribution.notes ?? null
-      ]
-    );
-    return result.lastInsertRowId;
+    
+    await db.execAsync('BEGIN TRANSACTION;');
+    
+    try {
+      const result = await db.runAsync(
+        `INSERT INTO contributions (
+          investment_id, amount, contribution_date, frequency, notes, expense_id
+        ) VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          contribution.investment_id,
+          contribution.amount,
+          contribution.contribution_date,
+          contribution.frequency,
+          contribution.notes ?? null,
+          contribution.expense_id ?? null
+        ]
+      );
+
+      // Only update investment value for direct contributions (no linked expense)
+      if (!contribution.expense_id) {
+        await db.runAsync(
+          `UPDATE investments 
+           SET current_value = current_value + ? 
+           WHERE id = ?`,
+          [contribution.amount, contribution.investment_id]
+        );
+      }
+
+      await db.execAsync('COMMIT;');
+      return result.lastInsertRowId;
+    } catch (error) {
+      await db.execAsync('ROLLBACK;');
+      throw error;
+    }
   } catch (error) {
     console.error('Error adding contribution:', error);
+    throw error;
+  }
+};
+
+
+
+// Add new method to handle contribution deletion
+export const deleteContribution = async (id: number): Promise<void> => {
+  try {
+    const db = getDatabase();
+    
+    // Get contribution details before deletion
+    const contribution = await db.getFirstAsync<Contribution>(
+      'SELECT * FROM contributions WHERE id = ?',
+      [id]
+    );
+
+    if (!contribution) return;
+
+    await db.execAsync('BEGIN TRANSACTION;');
+    
+    try {
+      // Only update investment value if no expense is linked
+      if (!contribution.expense_id) {
+        await db.runAsync(
+          `UPDATE investments 
+           SET current_value = current_value - ? 
+           WHERE id = ?`,
+          [contribution.amount, contribution.investment_id]
+        );
+      }
+
+      await db.runAsync('DELETE FROM contributions WHERE id = ?', [id]);
+      
+      await db.execAsync('COMMIT;');
+    } catch (error) {
+      await db.execAsync('ROLLBACK;');
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error deleting contribution:', error);
     throw error;
   }
 };
@@ -50,7 +112,19 @@ export const getContributions = async (investmentId: number): Promise<Contributi
   try {
     const db = getDatabase();
     return await db.getAllAsync<Contribution>(
-      'SELECT * FROM contributions WHERE investment_id = ? ORDER BY contribution_date DESC',
+      `SELECT 
+        c.*,
+        e.status as expense_status,
+        e.paid_date as expense_paid_date,
+        CASE 
+          WHEN c.expense_id IS NULL THEN true
+          WHEN e.status = 'paid' THEN true
+          ELSE false
+        END as is_applied
+       FROM contributions c
+       LEFT JOIN expenses e ON c.expense_id = e.id
+       WHERE c.investment_id = ? 
+       ORDER BY c.contribution_date DESC`,
       [investmentId]
     );
   } catch (error) {
@@ -65,23 +139,32 @@ export const getInvestments = async (): Promise<Investment[]> => {
     const investments = await db.getAllAsync<Investment>(
       `SELECT 
         i.*,
-        it.name as type_name,
         it.description as type_description,
         it.risk_level as type_risk_level,
-        it.liquidity as type_liquidity
+        it.liquidity as type_liquidity,
+        COALESCE(
+          (SELECT SUM(c.amount) 
+           FROM contributions c
+           LEFT JOIN expenses e ON c.expense_id = e.id
+           WHERE c.investment_id = i.id 
+           AND (c.expense_id IS NULL OR e.status = 'paid')
+          ), 
+          0
+        ) as total_contributions
       FROM investments i
       LEFT JOIN investments_types it ON i.type = it.name
       ORDER BY i.created_at DESC`
     );
 
-    return investments.map(inv => ({
+    return investments.map((inv: any) => ({
       ...inv,
-      investment_type: inv.name ? {
-        id: inv.id,
-        name: inv.name,
-        description: inv.name,
-        risk_level: inv.risk_level as RiskLevel,
-        liquidity: inv.liquidity as Liquidity
+      current_value: Number(inv.current_value || 0),
+      investment_type: inv.type ? {
+        id: 0, // We don't need this for display
+        name: inv.type,
+        description: inv.type_description,
+        risk_level: inv.type_risk_level as RiskLevel,
+        liquidity: inv.type_liquidity as Liquidity
       } : undefined
     }));
   } catch (error) {
@@ -169,6 +252,50 @@ export const deleteInvestment = async (id: number): Promise<void> => {
     await db.runAsync('DELETE FROM investments WHERE id = ?', [id]);
   } catch (error) {
     console.error('Error deleting investment:', error);
+    throw error;
+  }
+};
+
+export const getInvestmentPerformance = async (
+  investmentId: number,
+  period: 'week' | 'month' | 'year' = 'month'
+): Promise<InvestmentPerformance[]> => {
+  try {
+    const db = getDatabase();
+    const periodFilter = {
+      week: "date('now', '-7 days')",
+      month: "date('now', '-30 days')",
+      year: "date('now', '-365 days')"
+    };
+
+    return await db.getAllAsync<InvestmentPerformance>(
+      `SELECT * FROM investment_performance 
+       WHERE investment_id = ? 
+       AND date >= ${periodFilter[period]}
+       ORDER BY date ASC`,
+      [investmentId]
+    );
+  } catch (error) {
+    console.error('Error getting investment performance:', error);
+    throw error;
+  }
+};
+
+export const updateInvestmentValue = async (
+  id: number,
+  newValue: number
+): Promise<void> => {
+  try {
+    const db = getDatabase();
+    await db.runAsync(
+      `UPDATE investments 
+       SET current_value = ?, 
+           updated_at = CURRENT_TIMESTAMP 
+       WHERE id = ?`,
+      [newValue, id]
+    );
+  } catch (error) {
+    console.error('Error updating investment value:', error);
     throw error;
   }
 };

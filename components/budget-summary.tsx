@@ -15,13 +15,14 @@ import { useBudgetStore } from "../store/budget-store";
 import { colors } from "../utils/colors";
 import { formatCurrency } from "../utils/format";
 import { Legend } from "./legend";
+import { router } from "expo-router";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CHART_WIDTH = Math.min(SCREEN_WIDTH - 64, 300);
 const CHART_RADIUS = CHART_WIDTH * 0.4;
 
 export const BudgetSummary = () => {
-  const { summary, loading, error, fetchSummary } = useBudgetStore();
+  const { summary, loading, error, fetchSummary, defaultCurrency } = useBudgetStore();
 
   useEffect(() => {
     fetchSummary();
@@ -37,16 +38,16 @@ export const BudgetSummary = () => {
 
   if (!summary || summary.categories.length === 0) {
     return (
-     <Card>
-      <Text style={styles.title}>Monthly Budget Overview</Text>
-       <EmptyState
-        icon={<Ionicons name="wallet-outline" size={34} color="#8A8A8A" />}
-        message="No budget data available."
-        encouragement="Set up a budget to track your expenses and stay in control of your finances!"
-        ctaText="Create A Budget"
-        onPress={() => console.log("Navigate to add budget screen")}
-      />
-     </Card>
+      <Card>
+        <Text style={styles.title}>Monthly Budget Overview</Text>
+        <EmptyState
+          icon={<Ionicons name="wallet-outline" size={34} color="#8A8A8A" />}
+          message="No budget data available."
+          encouragement="Set up a budget to track your expenses and stay in control of your finances!"
+          ctaText="Create A Budget"
+          onPress={() => console.log("Navigate to add budget screen")}
+        />
+      </Card>
     );
   }
 
@@ -57,25 +58,45 @@ export const BudgetSummary = () => {
     label: category.name,
   }));
 
-  const legendItems = summary.categories.map(category => ({
+  const legendItems = summary.categories.map((category) => ({
     color: category.color,
     label: category.name,
-    value: `${category.percentage.toFixed(1)}%`
+    value: `${category.percentage.toFixed(1)}%`,
   }));
 
   return (
-    <Card>
+    <Card variant="budget">
       <View style={styles.header}>
         <Text style={styles.title}> Monthly Budget Overview</Text>
         <Pressable
           style={styles.showAllButton}
-          onPress={() => console.log("Show all expenses pressed")}
+          onPress={() =>
+            router.push({
+              pathname: "/(tabs)/budget",
+            })
+          }
         >
           <Text style={styles.showAllText}>Deeper Analysis</Text>
           <Ionicons name="chevron-forward" size={16} color={colors.accent} />
         </Pressable>
       </View>
 
+     
+
+      <View style={styles.statsContainer}>
+        <View style={styles.statItem}>
+          <Text style={styles.statLabel}>Total Budget</Text>
+          <Text style={styles.statValue}>
+            {formatCurrency(summary.totalIncome, defaultCurrency)}
+          </Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statLabel}>Spent</Text>
+          <Text style={styles.statValue}>
+            {formatCurrency(summary.totalExpenses, defaultCurrency)}
+          </Text>
+        </View>
+      </View>
       <View style={styles.chartSection}>
         <View style={styles.chartContainer}>
           <PieChart
@@ -88,29 +109,16 @@ export const BudgetSummary = () => {
             centerLabelComponent={() => (
               <View style={styles.centerLabel}>
                 <Text style={styles.centerAmount}>
-                  {formatCurrency(summary.unallocatedAmount, summary.currency)}
+                  {formatCurrency(summary.unallocatedAmount, defaultCurrency)}
                 </Text>
-                <Text style={styles.centerText}>{summary.unallocatedAmount > 0 ? `Unallocated` : `Overspent`}</Text>
+                <Text style={styles.centerText}>
+                  {summary.unallocatedAmount > 0 ? `Unallocated` : `Overspent`}
+                </Text>
               </View>
             )}
           />
         </View>
         <Legend items={legendItems} />
-      </View>
-
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>Total Budget</Text>
-          <Text style={styles.statValue}>
-            {formatCurrency(summary.totalIncome, summary.currency)}
-          </Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>Spent</Text>
-          <Text style={styles.statValue}>
-            {formatCurrency(summary.totalExpenses, summary.currency)}
-          </Text>
-        </View>
       </View>
     </Card>
   );
@@ -127,7 +135,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: colors.text.primary,
-    flex: 1
+    flex: 1,
   },
   viewAll: {
     fontSize: 14,
@@ -136,10 +144,10 @@ const styles = StyleSheet.create({
   },
   chartSection: {
     alignItems: "center",
-    marginVertical: 20,
     width: "100%",
     maxWidth: CHART_WIDTH + 32,
     alignSelf: "center",
+    gap: 16,
   },
   chartContainer: {
     width: CHART_WIDTH,
@@ -161,12 +169,14 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    marginVertical: 20,
-    paddingHorizontal: 10,
+    gap: 8
   },
   statItem: {
     alignItems: "center",
+    backgroundColor: colors.background.highlight,
+    flex: 1,
+    padding: 16,
+    borderRadius: 16,
   },
   statLabel: {
     fontSize: 12,
@@ -197,9 +207,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   showAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-end',
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-end",
     paddingVertical: 8,
     paddingHorizontal: 12,
     marginTop: 8,
@@ -209,7 +219,7 @@ const styles = StyleSheet.create({
   },
   showAllText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.accent,
   },
   categoryName: {

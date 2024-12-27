@@ -11,6 +11,7 @@ interface AmountInputProps {
 }
 
 const formatAmount = (amount: string) => {
+  if (!amount) return '';
   const cleanAmount = amount.replace(/,/g, '');
   const [whole, decimal] = cleanAmount.split('.');
   const formattedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -35,6 +36,8 @@ export const AmountInput: React.FC<AmountInputProps> = ({
     onChangeValue?.(formattedText);
   };
 
+  const formattedValue = formatAmount(amount);
+
   const content = (
     <View>
       {label && <Text style={styles.label}>{label}</Text>}
@@ -45,18 +48,22 @@ export const AmountInput: React.FC<AmountInputProps> = ({
         {useSystemKeyboard ? (
           <TextInput
             style={styles.amountInput}
-            value={formatAmount(amount)}
+            value={formattedValue}
             onChangeText={handleChangeText}
             keyboardType="decimal-pad"
             placeholder="0.00"
           />
         ) : (
           <Text 
-            style={[styles.amountInput, styles.amountText]}
+            style={[
+              styles.amountInput, 
+              styles.amountText,
+              !formattedValue && styles.placeholder
+            ]}
             adjustsFontSizeToFit
             numberOfLines={1}
           >
-            {formatAmount(amount)}
+            {formattedValue || '0.00'}
           </Text>
         )}
       </View>
@@ -107,5 +114,8 @@ const styles = StyleSheet.create({
   amountText: {
     fontWeight: 'bold',
     textAlign: 'left',
+  },
+  placeholder: {
+    color: '#8A8A8A',
   },
 });

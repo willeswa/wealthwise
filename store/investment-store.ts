@@ -1,6 +1,10 @@
 import { create } from 'zustand';
-import { Investment, InvestmentInput, Contribution, ContributionInput, InvestmentType } from '../utils/types/investment';
-import { addInvestment, deleteInvestment, getInvestments, addContribution, getContributions, getInvestmentTypes, updateInvestment } from '../utils/db/investments';
+import { Investment, InvestmentInput, Contribution, ContributionInput, InvestmentType, InvestmentPerformance, PortfolioAnalytics } from '../utils/types/investment';
+import { addInvestment, deleteInvestment, getInvestments, addContribution, getContributions, getInvestmentTypes, updateInvestment, getInvestmentPerformance } from '../utils/db/investments';
+import { analyzePortfolio } from '@/utils/investment-analytics';
+import { getDatabase } from '@/utils/db/utils/setup';
+import { useBudgetStore } from './budget-store';
+import { getDefaultCurrency } from '../utils/db/utils/settings';
 
 interface InvestmentStore {
   investments: Investment[];
@@ -9,7 +13,8 @@ interface InvestmentStore {
   loading: boolean;
   error: string | null;
   initialized: boolean;
-  
+  analytics: PortfolioAnalytics | null;
+  performances: Record<number, InvestmentPerformance[]>;
   fetchInvestments: () => Promise<void>;
   fetchContributions: (investmentId: number) => Promise<void>;
   fetchInvestmentTypes: () => Promise<void>;
@@ -17,6 +22,9 @@ interface InvestmentStore {
   addNewContribution: (contribution: ContributionInput) => Promise<void>;
   removeInvestment: (id: number) => Promise<void>;
   updateExistingInvestment: (id: number, investment: Partial<InvestmentInput>) => Promise<void>;
+  calculateAnalytics: () => void;
+  getPendingContributions: () => Promise<void>;
+  defaultCurrency: string;
 }
 
 export const useInvestmentStore = create<InvestmentStore>((set, get) => ({
@@ -26,12 +34,51 @@ export const useInvestmentStore = create<InvestmentStore>((set, get) => ({
   loading: false,
   error: null,
   initialized: false,
+  analytics: null,
+  performances: {},
+  defaultCurrency: 'USD',
 
   fetchInvestments: async () => {
     try {
       set({ loading: true, error: null });
-      const data = await getInvestments();
-      set({ investments: data, initialized: true });
+      const [data, currency] = await Promise.all([
+        getInvestments(),
+        getDefaultCurrency()
+      ]);
+      
+      // Initialize analytics with empty state if needed
+      if (!get().analytics) {
+        set({
+          analytics: {
+            bestPerforming: { name: '', return: 0 },
+            worstPerforming: { name: '', return: 0 },
+            riskAnalysis: {
+              riskScore: 0,
+              riskLevel: 'Medium',
+              distribution: { low: 0, medium: 0, high: 0 }
+            },
+            recommendations: []
+          }
+        });
+      }
+      
+      set({ 
+        investments: data, 
+        defaultCurrency: currency,
+        initialized: true 
+      });
+      
+      // Fetch performance data for each investment
+      const performances: Record<number, InvestmentPerformance[]> = {};
+      for (const inv of data) {
+        const perfData = await getInvestmentPerformance(inv.id);
+        performances[inv.id] = perfData;
+      }
+      set({ performances });
+      
+      // Update analytics after getting all data
+      await get().getPendingContributions();
+      get().calculateAnalytics();
     } catch (error) {
       set({ error: 'Failed to fetch investments', initialized: false });
       console.error('Error fetching investments:', error);
@@ -70,7 +117,10 @@ export const useInvestmentStore = create<InvestmentStore>((set, get) => ({
     try {
       set({ loading: true, error: null });
       await addInvestment(investmentData);
-      await get().fetchInvestments();
+      await Promise.all([
+        get().fetchInvestments(),
+        useBudgetStore.getState().fetchSummary()
+      ]);
     } catch (error) {
       set({ error: 'Failed to add investment' });
       throw error;
@@ -83,7 +133,10 @@ export const useInvestmentStore = create<InvestmentStore>((set, get) => ({
     try {
       set({ loading: true, error: null });
       await addContribution(contributionData);
-      await get().fetchContributions(contributionData.investment_id);
+      await Promise.all([
+        get().fetchContributions(contributionData.investment_id),
+        useBudgetStore.getState().fetchSummary()
+      ]);
     } catch (error) {
       set({ error: 'Failed to add contribution' });
       throw error;
@@ -115,6 +168,53 @@ export const useInvestmentStore = create<InvestmentStore>((set, get) => ({
       throw error;
     } finally {
       set({ loading: false });
+    }
+  },
+
+  calculateAnalytics: () => {
+    const { investments, performances } = get();
+    if (investments.length > 0) {
+      const analytics = analyzePortfolio(investments);
+      set(state => ({
+        analytics: {
+          ...analytics,
+          pendingContributions: state.analytics?.pendingContributions || []
+        }
+      }));
+    }
+  },
+
+  getPendingContributions: async () => {
+    try {
+      const db = getDatabase();
+      const pendingContributions = await db.getAllAsync(`
+        SELECT 
+          i.name as investmentName,
+          e.amount,
+          e.status,
+          e.due_date as dueDate
+        FROM expenses e
+        JOIN investments i ON i.id = e.linked_item_id
+        WHERE e.linked_item_type = 'investment'
+        AND e.status = 'pending'
+        ORDER BY e.due_date ASC
+      `);
+
+      if (!get().analytics) return;
+
+      set(state => ({
+        analytics: {
+          ...state.analytics!,
+          pendingContributions: pendingContributions.map((pc: any) => ({
+            investmentName: pc.investmentName,
+            amount: Number(pc.amount),
+            status: pc.status,
+            dueDate: pc.dueDate
+          }))
+        }
+      }));
+    } catch (error) {
+      console.error('Error fetching pending contributions:', error);
     }
   },
 }));

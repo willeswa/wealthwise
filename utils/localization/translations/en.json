@@ -1,0 +1,23 @@
+{
+  "onboarding": {
+    "country": {
+      "title": "Where are you from?",
+      "placeholder": "Choose your country"
+    },
+    "income": {
+      "title": "What's your monthly income?",
+      "placeholder": "Enter amount"
+    },
+    "goals": {
+      "title": "What's your primary financial goal?",
+      "debt_free": {
+        "label": "Become Debt Free",
+        "description": "Focus on clearing all your debts"
+      },
+      "emergency_fund": {
+        "label": "Build Emergency Fund",
+        "description": "Save for unexpected expenses"
+      }
+    }
+  }
+}

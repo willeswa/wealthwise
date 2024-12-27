@@ -1,68 +1,79 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { format } from 'date-fns';
-import React, { useState, useRef, useEffect } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View, ScrollView, Animated, LayoutChangeEvent } from "react-native";
-import { useDebtStore } from '../store/debt-store';
-import { useModalStore } from '../store/modal-store';
-import { DebtInput, RepaymentFrequency } from '../utils/types/debt';
-import { AmountInput } from './AmountInput';
-import { Button } from './Button';
-import { CustomDatePicker } from './CustomDatePicker';
-import { NumberStepper } from './NumberStepper';
-import { colors } from '../utils/colors';
-import { Dropdown } from './Dropdown';
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { format } from "date-fns";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  LayoutChangeEvent,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { useDebtStore } from "../store/debt-store";
+import { useModalStore } from "../store/modal-store";
+import { calculateEndDate } from "../utils/calculations/debt";
+import { colors } from "../utils/colors";
+import { DebtInput, RepaymentPeriodUnit } from "../utils/types/debt";
+import { AmountInput } from "./AmountInput";
+import { Button } from "./Button";
+import { CustomDatePicker } from "./CustomDatePicker";
+import { Dropdown } from "./Dropdown";
+import { NumberStepper } from "./NumberStepper";
 import { ScrollIndicator } from "./scroll-indicator";
+import { getDefaultCurrency } from '../utils/db/utils/settings';
 
 const CURRENCIES = [
-  { symbol: '$', code: 'USD', name: 'US Dollar' },
-  { symbol: 'KES', code: 'KES', name: 'Kenyan Shilling' },
-  { symbol: '£', code: 'GBP', name: 'British Pound' },
+  { symbol: "$", code: "USD", name: "US Dollar" },
+  { symbol: "KES", code: "KES", name: "Kenyan Shilling" },
+  { symbol: "£", code: "GBP", name: "British Pound" },
 ] as const;
 
-const FREQUENCIES: RepaymentFrequency[] = ['One-time', 'Weekly', 'Monthly', 'Yearly'];
+const PERIOD_UNITS: RepaymentPeriodUnit[] = ["Weeks", "Months", "Years"];
 
 const PADDING_HORIZONTAL = 16;
 
 export const AddDebtScreen = () => {
-  const addNewDebt = useDebtStore(state => state.addNewDebt);
+  const addNewDebt = useDebtStore((state) => state.addNewDebt);
   const { closeModal } = useModalStore();
-  
+
   const [totalAmount, setTotalAmount] = useState("");
   const [creditor, setCreditor] = useState("");
   const [notes, setNotes] = useState("");
-  const [currency, setCurrency] = useState(CURRENCIES[0]);
+  const [currency, setCurrency] = useState<string>('USD');
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [interestRate, setInterestRate] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [frequency, setFrequency] = useState<RepaymentFrequency>('Monthly');
-  const [showFrequencyPicker, setShowFrequencyPicker] = useState(false);
+  const [repaymentPeriod, setRepaymentPeriod] = useState<number>(0);
+  const [periodUnit, setPeriodUnit] = useState<RepaymentPeriodUnit>("Months");
   const scrollY = React.useRef(new Animated.Value(0)).current;
-  const maxScroll = 400; // Adjust based on content height
+  const maxScroll = 400; // Adjust based on content heightfdefa
   const [isScrolling, setIsScrolling] = useState(false);
   const scrollEndTimer = useRef<NodeJS.Timeout>();
   const scrollViewRef = useRef(null);
   const [isScrollable, setIsScrollable] = useState(false);
   const [contentHeight, setContentHeight] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
+  const [showPeriodUnitPicker, setShowPeriodUnitPicker] = useState(false);
 
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    { 
+    {
       useNativeDriver: true,
       listener: () => {
         setIsScrolling(true);
-        
+
         if (scrollEndTimer.current) {
           clearTimeout(scrollEndTimer.current);
         }
-        
+
         scrollEndTimer.current = setTimeout(() => {
           setIsScrolling(false);
         }, 800);
-      }
+      },
     }
   );
 
@@ -90,6 +101,25 @@ export const AddDebtScreen = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (repaymentPeriod > 0) {
+      const calculatedEndDate = calculateEndDate(
+        startDate,
+        repaymentPeriod,
+        periodUnit
+      );
+      setEndDate(calculatedEndDate);
+    }
+  }, [startDate, repaymentPeriod, periodUnit]);
+
+  useEffect(() => {
+    const loadDefaultCurrency = async () => {
+      const defaultCurrency = await getDefaultCurrency();
+      setCurrency(defaultCurrency);
+    };
+    loadDefaultCurrency();
+  }, []);
+
   const handleConfirm = async () => {
     if (isSubmitting) return;
 
@@ -98,12 +128,12 @@ export const AddDebtScreen = () => {
       const numericAmount = parseFloat(totalAmount);
 
       if (isNaN(numericAmount) || numericAmount <= 0) {
-        alert('Please enter a valid amount');
+        alert("Please enter a valid amount");
         return;
       }
 
       if (!creditor.trim()) {
-        alert('Please enter a creditor name');
+        alert("Please enter a creditor name");
         return;
       }
 
@@ -111,18 +141,27 @@ export const AddDebtScreen = () => {
         creditor: creditor.trim(),
         total_amount: numericAmount,
         interest_rate: interestRate,
-        currency: currency.code,
-        frequency,
-        start_date: format(startDate, 'yyyy-MM-dd'),
-        expected_end_date: format(endDate, 'yyyy-MM-dd'),
+        currency: currency,
+        frequency:
+          periodUnit === "Weeks"
+            ? "Weekly"
+            : periodUnit === "Months"
+            ? "Monthly"
+            : periodUnit === "Years"
+            ? "Yearly"
+            : "Monthly",
+        start_date: format(startDate, "yyyy-MM-dd"),
+        expected_end_date: format(endDate, "yyyy-MM-dd"),
+        repayment_period: repaymentPeriod,
+        period_unit: periodUnit,
         notes: notes.trim() || undefined,
       };
 
       await addNewDebt(debtData);
       closeModal();
     } catch (error) {
-      console.error('Error adding debt:', error);
-      alert('Failed to add debt. Please try again.');
+      console.error("Error adding debt:", error);
+      alert("Failed to add debt. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -138,16 +177,13 @@ export const AddDebtScreen = () => {
         scrollEventThrottle={16}
         onLayout={handleScrollViewLayout}
       >
-        <View 
-          style={styles.contentContainer}
-          onLayout={handleContentLayout}
-        >
+        <View style={styles.contentContainer} onLayout={handleContentLayout}>
           <Text style={styles.title}>Add Debt</Text>
-          
+
           <View style={{ gap: 16 }}>
-            <AmountInput 
+            <AmountInput
               amount={totalAmount}
-              currencySymbol={currency.symbol}
+              currencySymbol={currency}
               useSystemKeyboard={true}
               onChangeValue={setTotalAmount}
             />
@@ -164,67 +200,89 @@ export const AddDebtScreen = () => {
               value={interestRate}
               onChange={setInterestRate}
               min={0}
-              max={100}
+              max={2000}
               step={0.1}
               label="Interest Rate (%)"
             />
 
-            <View style={styles.dateSelection}>
-              <Text style={styles.dateLabel}>Payment Schedule</Text>
-              <View style={styles.dateInputs}>
-                <Pressable 
-                  style={styles.datePicker}
-                  onPress={() => setShowStartDatePicker(true)}
-                >
-                  <MaterialCommunityIcons 
-                    name="calendar" 
-                    size={18} 
-                    color={colors.text.secondary} 
+            {/* Repayment Period Section */}
+            <View>
+              <Text style={styles.inputLabel}>Repayment Period</Text>
+              <View style={styles.periodWrapper}>
+                <View style={styles.periodContainer}>
+                  <TextInput
+                    style={styles.periodInput}
+                    keyboardType="numeric"
+                    value={repaymentPeriod > 0 ? repaymentPeriod.toString() : ""}
+                    onChangeText={(text) => setRepaymentPeriod(Number(text) || 0)}
+                    placeholder="eg. 48"
                   />
-                  <Text style={styles.dateText}>
-                    {format(startDate, 'MMM dd, yyyy')}
-                  </Text>
-                  <Text style={styles.dateHint}>Start</Text>
-                </Pressable>
-
-                <MaterialCommunityIcons 
-                  name="arrow-right" 
-                  size={18} 
-                  color={colors.text.light} 
-                />
-
-                <Pressable 
-                  style={styles.datePicker}
-                  onPress={() => setShowEndDatePicker(true)}
-                >
-                  <MaterialCommunityIcons 
-                    name="calendar" 
-                    size={18} 
-                    color={colors.text.secondary} 
-                  />
-                  <Text style={styles.dateText}>
-                    {format(endDate, 'MMM dd, yyyy')}
-                  </Text>
-                  <Text style={styles.dateHint}>End</Text>
-                </Pressable>
+                  
+                  <View style={styles.periodUnitSection}>
+                    <Dropdown
+                      label=""
+                      value={periodUnit}
+                      options={PERIOD_UNITS.map(unit => ({
+                        id: unit,
+                        label: unit,
+                        value: unit
+                      }))}
+                      showPicker={showPeriodUnitPicker}
+                      onPress={() => setShowPeriodUnitPicker(!showPeriodUnitPicker)}
+                      onSelect={(option) => {
+                        setPeriodUnit(option.value as RepaymentPeriodUnit);
+                        setShowPeriodUnitPicker(false);
+                      }}
+                      selectorStyle={styles.periodUnitSelector}
+                    />
+                  </View>
+                </View>
               </View>
             </View>
 
-            <Dropdown
-              label="Repayment Frequency"
-              value={frequency}
-              options={FREQUENCIES.map(f => ({
-                id: f,
-                label: f,
-                value: f
-              }))}
-              showPicker={showFrequencyPicker}
-              onPress={() => setShowFrequencyPicker(true)}
-              onSelect={(option) => {
-                setFrequency(option.value as RepaymentFrequency);
-                setShowFrequencyPicker(false);
-              }}
-            />
+            {/* Payment Schedule Section */}
+            <View style={styles.dateSelection}>
+              <Text style={styles.dateLabel}>Payment Schedule</Text>
+              <View style={styles.scheduleInputs}>
+                <View style={styles.datesRow}>
+                  <Pressable
+                    style={[styles.datePicker, styles.datePickerHalf]}
+                    onPress={() => setShowStartDatePicker(true)}
+                  >
+                    <MaterialCommunityIcons
+                      name="calendar"
+                      size={18}
+                      color={colors.text.secondary}
+                    />
+                    <Text style={styles.dateText}>
+                      {format(startDate, "MMM dd, yyyy")}
+                    </Text>
+                    <Text style={styles.dateHint}>Start</Text>
+                  </Pressable>
+
+                  <MaterialCommunityIcons
+                    name="arrow-right"
+                    size={18}
+                    color={colors.text.light}
+                  />
+
+                  <Pressable
+                    style={[styles.datePicker, styles.datePickerHalf]}
+                    onPress={() => setShowEndDatePicker(true)}
+                  >
+                    <MaterialCommunityIcons
+                      name="calendar"
+                      size={18}
+                      color={colors.text.secondary}
+                    />
+                    <Text style={styles.dateText}>
+                      {format(endDate, "MMM dd, yyyy")}
+                    </Text>
+                    <Text style={styles.dateHint}>End</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
 
             <TextInput
               style={styles.commentInput}
@@ -239,15 +297,15 @@ export const AddDebtScreen = () => {
         </View>
       </Animated.ScrollView>
 
-      <ScrollIndicator 
-        scrollY={scrollY} 
+      <ScrollIndicator
+        scrollY={scrollY}
         maxScroll={maxScroll}
-        isScrolling={isScrolling} 
+        isScrolling={isScrolling}
         isScrollable={isScrollable}
       />
 
       <View style={styles.bottomContainer}>
-        <Button 
+        <Button
           title={isSubmitting ? "Adding..." : "Add Debt"}
           onPress={handleConfirm}
           disabled={isSubmitting || !totalAmount || !creditor.trim()}
@@ -314,13 +372,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#EAEAEA",
     paddingHorizontal: 16,
-    height: 43,
+    height: 48,
     borderRadius: 32,
   },
   commentInput: {
     fontSize: 16,
     color: "#8A8A8A",
-    backgroundColor: '#F5F6FA',
+    backgroundColor: "#F5F6FA",
     padding: 16,
     minHeight: 60,
     textAlignVertical: "top",
@@ -329,7 +387,7 @@ const styles = StyleSheet.create({
   },
   notesInput: {
     height: 80,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
     paddingTop: 8,
   },
   dateSelection: {
@@ -341,19 +399,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   dateInputs: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: 12,
   },
   datePicker: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     padding: 12,
     backgroundColor: colors.background.highlight,
-    borderRadius: 8,
+    borderRadius: 32,
   },
   dateText: {
     flex: 1,
@@ -369,5 +427,88 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     paddingTop: 12,
     borderTopColor: colors.background.highlight,
+  },
+  periodWrapper: {
+    position: "relative",
+    zIndex: 1,
+  },
+  periodContainer: {
+    flexDirection: "row",
+    borderRadius: 32,
+    overflow: "visible",
+    minHeight: 48,
+  },
+  periodInput: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text.primary,
+    paddingHorizontal: 16,
+    backgroundColor: colors.background.highlight,
+    height: 48,
+    borderWidth: 1,
+    borderColor: colors.background.highlight,
+    borderRadius: 32,
+    borderRightWidth: 0,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  periodUnitSection: {
+    minWidth: 120,
+    backgroundColor: colors.background.highlight,
+    borderRadius: 32,
+  },
+  periodUnitSelector: {
+    height: 48,
+    borderWidth: 1,
+    borderColor: colors.background.highlight,
+    borderLeftWidth: 0,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    borderTopRightRadius: 32,
+    borderBottomRightRadius: 32,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginBottom: 8,
+  },
+  periodInputs: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  numberInput: {
+    flex: 1,
+  },
+  endDateToggle: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 12,
+  },
+  toggleLabel: {
+    fontSize: 14,
+    color: colors.text.secondary,
+  },
+  scheduleInputs: {
+    gap: 12,
+  },
+  startDateSection: {
+    marginBottom: 12,
+  },
+  periodSection: {
+    marginBottom: 12,
+  },
+  endDateSection: {
+    marginBottom: 12,
+  },
+  datesRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 12,
+  },
+  datePickerHalf: {
+    flex: 1,
   },
 });

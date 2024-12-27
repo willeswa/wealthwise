@@ -97,23 +97,8 @@ export function AddOptionsMenu() {
       return;
     }
 
-    Animated.sequence([
-      Animated.spring(primaryScale[index], {
-        toValue: 0.95,
-        tension: 100,
-        friction: 3,
-        useNativeDriver: true,
-      }),
-      Animated.spring(primaryScale[index], {
-        toValue: 1,
-        tension: 100,
-        friction: 3,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      hideOptionsMenu();
-      openModal(option.action as any);
-    });
+    hideOptionsMenu();
+    openModal(option.action as any);
   };
 
   const handleSubOptionPress = (action: string) => {
@@ -155,8 +140,8 @@ export function AddOptionsMenu() {
 
         <View style={styles.grid}>
           {OPTIONS.map((option, index) => (
-            <React.Fragment key={option.id}>
               <Pressable
+              key={index}
                 style={[
                   styles.gridItem,
                   expandedOption === option.id && styles.gridItemExpanded
@@ -195,7 +180,6 @@ export function AddOptionsMenu() {
                   </View>
                 )}
               </Pressable>
-            </React.Fragment>
           ))}
         </View>
       </Animated.View>

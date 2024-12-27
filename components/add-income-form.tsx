@@ -1,16 +1,16 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useState, useRef, useEffect } from "react";
-import { StyleSheet, Text, View, ScrollView, Animated, LayoutChangeEvent } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, LayoutChangeEvent, StyleSheet, Text, View } from "react-native";
 import { useIncomeStore } from '../store/income-store';
+import { useModalStore } from '../store/modal-store';
 import { IncomeInput } from '../utils/types/income';
 import { AmountInput } from './AmountInput';
 import { Button } from './Button';
 import { CustomDatePicker } from './CustomDatePicker';
 import { Dropdown, DropdownOption } from './Dropdown';
 import { CurrencyType, Numpad } from './Numpad';
-import { CategoryType } from './type';
-import { useModalStore } from '../store/modal-store';
 import { ScrollIndicator } from "./scroll-indicator";
+import { CategoryType } from './type';
 
 // Add currency types
 
@@ -46,13 +46,9 @@ const PADDING_HORIZONTAL = 16;
 export const AddIncomeScreen = () => {
   const { defaultCurrency, setDefaultCurrency: updateDefaultCurrency } = useIncomeStore();
   const { closeModal } = useModalStore();
-  const [amount, setAmount] = useState("0.00");
+  const [amount, setAmount] = useState("");
   const [frequency, setFrequency] = useState<FrequencyType>('monthly');
   const [showFrequencyPicker, setShowFrequencyPicker] = useState(false);
-  const [currency, setCurrency] = useState<CurrencyType>(() => {
-    // Initialize with default currency or fallback to USD
-    return CURRENCIES.find(c => c.code === defaultCurrency) || CURRENCIES[0];
-  });
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>(CATEGORIES[0]);
   const [date, setDate] = useState(new Date());
@@ -70,16 +66,12 @@ export const AddIncomeScreen = () => {
 
   const handleNumberPress = (num: string) => {
     if (num === "." && amount.includes(".")) return;
-    if (amount === "0.00") {
-      setAmount(num === "." ? "0." : num);
-    } else {
-      setAmount((prev) => prev + num);
-    }
+    setAmount((prev) => prev + num);
   };
 
   const handleDelete = () => {
-    if (amount.length <= 1 || amount === "0.") {
-      setAmount("0.00");
+    if (amount.length <= 1) {
+      setAmount("");
     } else {
       setAmount((prev) => prev.slice(0, -1));
     }
@@ -89,7 +81,7 @@ export const AddIncomeScreen = () => {
     try {
       const incomeData: IncomeInput = {
         amount: parseFloat(amount),
-        currency: currency.code,
+        currency: defaultCurrency,
         category: selectedCategory.name,
         frequency,
         date: date.toISOString().split('T')[0],
@@ -110,11 +102,11 @@ export const AddIncomeScreen = () => {
   };
 
   const selectCurrency = async (newCurrency: CurrencyType) => {
-    if (newCurrency.code === currency.code) return;
+    if (newCurrency.code === defaultCurrency) return;
     
     try {
       await updateDefaultCurrency(newCurrency.code);
-      setCurrency(newCurrency);
+
     } catch (error) {
       console.error('Error updating currency:', error);
     }
@@ -217,7 +209,7 @@ export const AddIncomeScreen = () => {
           <View style={{ gap: 16 }}>
             <AmountInput 
               amount={amount}
-              currencySymbol={currency.symbol}
+              currencySymbol={defaultCurrency}
               onPress={() => {/* handle numpad open */}}
             />
             
@@ -257,7 +249,7 @@ export const AddIncomeScreen = () => {
               onDelete={handleDelete}
               onCurrencySelect={selectCurrency}
               currencies={CURRENCIES}
-              selectedCurrency={currency}
+              selectedCurrency={defaultCurrency}
               date={date}
               onDatePress={handleDatePress}
               showDatePicker={showDatePicker}

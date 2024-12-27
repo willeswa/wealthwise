@@ -8,18 +8,29 @@ import { CategoryGroup } from './category-group';
 import { EmptyState } from './empty-state';
 
 export const ExpensesList = () => {
-  const { expenses, loading, error, fetchExpenses, initialized, removeExpense } = useExpenseStore();
+  const { 
+    expenses, 
+    loading, 
+    error, 
+    defaultCurrency,
+    fetchExpenses, 
+    initialized, 
+    removeExpense,
+    updateStatus 
+  } = useExpenseStore();
+
+  console.log(expenses);
 
   const groupedExpenses = React.useMemo(() => {
     const groups = expenses.reduce((acc, expense) => {
-      if (!acc[expense.category]) {
-        acc[expense.category] = {
+      if (!acc[expense.category_name]) {
+        acc[expense.category_name] = {
           total: 0,
           items: [],
         };
       }
-      acc[expense.category].items.push(expense);
-      acc[expense.category].total += expense.amount;
+      acc[expense.category_name].items.push(expense);
+      acc[expense.category_name].total += expense.amount;
       return acc;
     }, {} as Record<string, { total: number; items: typeof expenses }>);
 
@@ -48,6 +59,21 @@ export const ExpensesList = () => {
     } catch (error) {
       console.error('Error deleting expense:', error);
       // Optionally show an error toast/alert here
+    }
+  };
+
+  const handleToggleStatus = async (id: string) => {
+    try {
+      const expense = expenses.find(e => e.id?.toString() === id);
+      if (expense) {
+        await updateStatus(
+          Number(id), 
+          expense.status === 'paid' ? 'pending' : 'paid',
+          expense.status === 'paid' ? undefined : new Date().toISOString()
+        );
+      }
+    } catch (error) {
+      console.error('Error updating expense status:', error);
     }
   };
 
@@ -98,8 +124,9 @@ export const ExpensesList = () => {
               category={item.category}
               total={item.total}
               items={item.items}
-              currency={item.items[0]?.currency}
+              currency={defaultCurrency}
               onDelete={handleDelete}
+              onToggleStatus={handleToggleStatus}
             />
           )}
           estimatedItemSize={200}

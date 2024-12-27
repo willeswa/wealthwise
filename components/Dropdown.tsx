@@ -1,6 +1,8 @@
-import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, StyleProp, ViewStyle, Dimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { ScrollView } from 'react-native-gesture-handler';
+import CountryFlag from "react-native-country-flag";
 
 export interface DropdownOption {
   id?: string;
@@ -17,6 +19,9 @@ interface DropdownProps {
   onPress: () => void;
   onSelect: (option: DropdownOption) => void;
   renderIcon?: (option: DropdownOption) => React.ReactNode;
+  containerStyle?: StyleProp<ViewStyle>;
+  selectorStyle?: StyleProp<ViewStyle>;
+  placeholder?: string;
 }
 
 export const Dropdown: React.FC<DropdownProps> = ({
@@ -27,17 +32,29 @@ export const Dropdown: React.FC<DropdownProps> = ({
   onPress,
   onSelect,
   renderIcon,
+  containerStyle,
+  selectorStyle,
+  placeholder,
 }) => {
   const selectedOption = options.find(opt => opt.value === value);
 
   return (
-    <View style={styles.container}>
-      <Pressable style={styles.selector} onPress={onPress}>
+    <View style={[styles.container, containerStyle]}>
+      <Pressable style={[styles.selector, selectorStyle]} onPress={onPress}>
         <Text style={styles.label} numberOfLines={1}>{label}</Text>
         <View style={styles.valueContainer}>
-          {renderIcon && selectedOption && renderIcon(selectedOption)}
-          <Text style={styles.value} numberOfLines={1}>
-            {selectedOption?.label}
+          {selectedOption && (
+            <CountryFlag
+              isoCode={selectedOption.value}
+              size={20}
+              style={styles.flag}
+            />
+          )}
+          <Text style={[
+            styles.value,
+            !selectedOption && styles.placeholder
+          ]} numberOfLines={1}>
+            {selectedOption?.label || placeholder}
           </Text>
           <MaterialCommunityIcons name={showPicker ? "chevron-up" : "chevron-down"} size={24} color="#8A8A8A" />
         </View>
@@ -45,7 +62,13 @@ export const Dropdown: React.FC<DropdownProps> = ({
 
       {showPicker && (
         <View style={styles.optionsContainer}>
-          <View style={styles.options}>
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={true}
+            bounces={false}
+            nestedScrollEnabled={true}
+          >
             {options.map((option) => (
               <Pressable
                 key={option.value}
@@ -55,7 +78,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
                 ]}
                 onPress={() => onSelect(option)}
               >
-                {renderIcon && renderIcon(option)}
+                <CountryFlag
+                  isoCode={option.value}
+                  size={20}
+                  style={styles.flag}
+                />
                 <Text style={[
                   styles.optionText,
                   value === option.value && styles.optionTextSelected
@@ -63,11 +90,15 @@ export const Dropdown: React.FC<DropdownProps> = ({
                   {option.label}
                 </Text>
                 {value === option.value && (
-                  <Text style={styles.checkmark}>✓</Text>
+                  <MaterialCommunityIcons 
+                    name="check-circle" 
+                    size={20} 
+                    color="#007AFF" 
+                  />
                 )}
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
         </View>
       )}
     </View>
@@ -81,7 +112,8 @@ const styles = StyleSheet.create({
   selector: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: '#F5F6FA',
     borderRadius: 32,
   },
@@ -102,21 +134,25 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
   optionsContainer: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
     marginTop: 4,
-    zIndex: 1000,
-  },
-  options: {
     backgroundColor: 'white',
     borderRadius: 16,
-    elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
+    elevation: 5,
+    maxHeight: 300, // Set a maximum height
+  },
+  scrollView: {
+    flexGrow: 0,
+  },
+  scrollContent: {
+    flexGrow: 0,
+  },
+  options: {
+    backgroundColor: 'white',
+    borderRadius: 16,
     overflow: 'hidden',
   },
   option: {
@@ -142,5 +178,12 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  placeholder: {
+    color: '#8A8A8A',
+  },
+  flag: {
+    borderRadius: 2,
+    marginRight: 8,
   },
 });

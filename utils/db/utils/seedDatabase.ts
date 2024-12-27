@@ -44,7 +44,6 @@ export const seedInvestmentTypes = async (db: SQLiteDatabase) => {
         [type.name, type.description, type.risk_level, type.liquidity]
       );
     }
-    console.log('Investment types seeded successfully');
   } catch (error) {
     console.error('Error seeding investment types:', error);
     throw error;

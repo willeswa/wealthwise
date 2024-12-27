@@ -28,3 +28,13 @@ export interface BudgetSummary {
   };
   currency: string;
 }
+
+export interface BudgetInsight {
+  monthlyChange: number;
+  highestIncrease: {
+    category: string;
+    percentage: number;
+  };
+  upcomingBills: number;
+  savingsProgress: number;
+}

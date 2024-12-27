@@ -1,6 +1,6 @@
+import { AddDebtScreen } from "@/components/add-debt-form";
 import { AddExpenseScreen } from "@/components/add-expense-form";
 import { AddIncomeScreen } from "@/components/add-income-form";
-import { AddDebtScreen } from "@/components/add-debt-form";
 import { AddInvestmentScreen } from "@/components/add-investment-form";
 import { useModalStore } from "@/store/modal-store";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
@@ -8,14 +8,14 @@ import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 export function ActionModal() {
   const { isModalVisible, currentAction, closeModal } = useModalStore();
 
-  console.log(currentAction, isModalVisible);
-
   return (
     <Modal
       animationType="slide"
       transparent={true}
       visible={isModalVisible}
       onRequestClose={closeModal}
+      hardwareAccelerated={true}
+      statusBarTranslucent={true}
     >
       <View style={styles.modalContainer}>
         <View style={[

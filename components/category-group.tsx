@@ -10,16 +10,18 @@ interface CategoryGroupProps {
   category: string;
   total: number;
   items: any[];
-  currency?: string;
+  currency: string;
   onDelete: (id: string) => void;
+  onToggleStatus: (id: string) => void;
 }
 
 export const CategoryGroup = ({ 
   category, 
   total, 
   items, 
-  currency = 'USD',
-  onDelete
+  currency,
+  onDelete,
+  onToggleStatus
 }: CategoryGroupProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -60,10 +62,12 @@ export const CategoryGroup = ({
               category={expense.category}
               date={expense.date}
               description={expense.comment || ''}
-              currency={expense.currency}
+              currency={currency}
               onDelete={(id) => onDelete(id)}
               onEdit={(id) => console.log('Edit:', id)}
               name={expense.name}
+              status={expense.status}
+              onToggleStatus={onToggleStatus}
             />
           ))}
         </Animated.View>

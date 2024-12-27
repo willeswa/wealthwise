@@ -3,6 +3,7 @@ import { addIncome, deleteIncome, getIncomes } from '../utils/db/income';
 import { getDefaultCurrency, setDefaultCurrency } from '../utils/db/utils/settings';
 import { Income, IncomeInput } from '../utils/types/income';
 import { useBudgetStore } from './budget-store';
+import { useInvestmentStore } from './investment-store';
 
 interface IncomeStore {
   incomes: Income[];
@@ -30,9 +31,16 @@ export const useIncomeStore = create<IncomeStore>((set) => ({
         getIncomes(),
         getDefaultCurrency()
       ]);
-      set({ incomes: data, defaultCurrency: currency, initialized: true });
+      set({ 
+        incomes: data, 
+        defaultCurrency: currency, 
+        initialized: true 
+      });
     } catch (error) {
-      set({ error: 'Failed to fetch incomes', initialized: false });
+      set({ 
+        error: 'Failed to fetch incomes', 
+        initialized: false 
+      });
       console.error('Error fetching incomes:', error);
     } finally {
       set({ loading: false });
@@ -45,7 +53,10 @@ export const useIncomeStore = create<IncomeStore>((set) => ({
       await addIncome(incomeData);
       const updatedIncomes = await getIncomes();
       set({ incomes: updatedIncomes });
-      await useBudgetStore.getState().fetchSummary();
+      await Promise.all([
+        useBudgetStore.getState().fetchSummary(),
+        useInvestmentStore.getState().calculateAnalytics()
+      ]);
     } catch (error) {
       set({ error: 'Failed to add income' });
       throw error;
@@ -60,7 +71,10 @@ export const useIncomeStore = create<IncomeStore>((set) => ({
       await deleteIncome(id);
       const updatedIncomes = await getIncomes();
       set({ incomes: updatedIncomes });
-      await useBudgetStore.getState().fetchSummary();
+      await Promise.all([
+        useBudgetStore.getState().fetchSummary(),
+        useInvestmentStore.getState().calculateAnalytics()
+      ]);
     } catch (error) {
       set({ error: 'Failed to delete income' });
       throw error;

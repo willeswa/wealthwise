@@ -1,6 +1,6 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import React from "react";
-import { View, Text, StyleSheet, Pressable, Dimensions } from "react-native";
-import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
+import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 
 export type CurrencyType = {
   symbol: string;
@@ -13,7 +13,7 @@ interface NumpadProps {
   onDelete: () => void;
   onCurrencySelect: (currency: CurrencyType) => void;
   currencies: CurrencyType[];
-  selectedCurrency: CurrencyType;
+  selectedCurrency: string;
   date: Date;
   onDatePress: () => void;
   showDatePicker?: boolean;
@@ -78,7 +78,7 @@ export const Numpad: React.FC<NumpadProps> = ({
             style={[styles.actionButton, styles.currencyButton]}
             onPress={handleCurrencyPress}
           >
-            <Text style={styles.currencyButtonText}>{selectedCurrency.symbol}</Text>
+            <Text style={styles.currencyButtonText}>{selectedCurrency}</Text>
           </Pressable>
           <Pressable 
             style={[styles.actionButton, styles.calendarButton]} 

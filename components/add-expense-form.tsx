@@ -1,19 +1,26 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
 import { format } from "date-fns";
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, Text, TextInput, View, LayoutChangeEvent } from "react-native";
+import {
+  Animated,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  LayoutChangeEvent,
+} from "react-native";
 import { useExpenseStore } from "../store/expense-store";
 import { useModalStore } from "../store/modal-store";
 import { getDebts } from "../utils/db/debt";
 import { getInvestments } from "../utils/db/investments";
-import { ExpenseCategory } from "../utils/types/expense";
+import { ExpenseCategory, ExpenseStatus } from "../utils/types/expense";
 import { AmountInput } from "./AmountInput";
 import { Button } from "./Button";
 import { CustomDatePicker } from "./CustomDatePicker";
-import { Dropdown } from "./Dropdown";
+import { Dropdown, DropdownOption } from "./Dropdown";
 import { CurrencyType, Numpad } from "./Numpad";
 import { ScrollIndicator } from "./scroll-indicator";
+import { NoDebtsSetup } from "./no-debts-setup";
 
 const CURRENCIES: CurrencyType[] = [
   { symbol: "$", code: "USD", name: "US Dollar" },
@@ -26,7 +33,6 @@ const CURRENCIES: CurrencyType[] = [
 const PADDING_HORIZONTAL = 16;
 
 export const AddExpenseScreen = () => {
-  const navigation = useNavigation();
   const {
     addNewExpense,
     defaultCurrency,
@@ -34,8 +40,8 @@ export const AddExpenseScreen = () => {
     categories,
     fetchCategories,
   } = useExpenseStore();
-  const { closeModal } = useModalStore();
-  const [amount, setAmount] = useState("0.00");
+  const { closeModal, openModal } = useModalStore();
+  const [amount, setAmount] = useState("");
   const [comment, setComment] = useState("");
   const [name, setName] = useState("");
   const [currency, setCurrency] = useState<CurrencyType>(() => {
@@ -57,6 +63,7 @@ export const AddExpenseScreen = () => {
     name: string;
   } | null>(null);
   const [showLinkedItemPicker, setShowLinkedItemPicker] = useState(false);
+  const [showDebtSetup, setShowDebtSetup] = useState(false);
 
   const scrollY = React.useRef(new Animated.Value(0)).current;
   const [isScrolling, setIsScrolling] = useState(false);
@@ -69,27 +76,24 @@ export const AddExpenseScreen = () => {
 
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    { 
+    {
       useNativeDriver: true,
       listener: () => {
         setIsScrolling(true);
-        
+
         if (scrollEndTimer.current) {
           clearTimeout(scrollEndTimer.current);
         }
-        
+
         scrollEndTimer.current = setTimeout(() => {
           setIsScrolling(false);
         }, 800);
-      }
+      },
     }
   );
 
   useEffect(() => {
     fetchCategories();
-    if (categories.length > 0) {
-      setSelectedCategory(categories[0]);
-    }
   }, []);
 
   useEffect(() => {
@@ -124,6 +128,18 @@ export const AddExpenseScreen = () => {
     } else {
       setLinkedItems([]);
     }
+  };
+
+  const handleCategorySelect = async (category: ExpenseCategory) => {
+    if (category.type === "debt") {
+      const debts = await getDebts();
+      if (debts.length === 0) {
+        setShowDebtSetup(true);
+        return;
+      }
+    }
+    handleCategoryChange(category);
+    setShowCategoryPicker(false);
   };
 
   const handleNumberPress = (num: string) => {
@@ -183,6 +199,7 @@ export const AddExpenseScreen = () => {
         amount: numericAmount,
         currency: currency.code,
         category_id: selectedCategory.id,
+        category_name: selectedCategory.name,
         linked_item_id: selectedLinkedItem?.id,
         linked_item_type:
           selectedCategory.type === "investment" ||
@@ -191,6 +208,7 @@ export const AddExpenseScreen = () => {
             : undefined,
         comment: comment.trim(),
         date: format(date, "yyyy-MM-dd"),
+        status: "completed" as ExpenseStatus,
       };
 
       await addNewExpense(expenseData);
@@ -249,6 +267,39 @@ export const AddExpenseScreen = () => {
     setIsScrollable(content > container);
   };
 
+  const handleSetupDebt = () => {
+    // Use modal actions instead of navigation
+    openModal("add-debt");
+  };
+
+  const handleLinkedItemSelect = (option: DropdownOption) => {
+    const item = linkedItems.find((i) => i.name === option.value)!;
+    setSelectedLinkedItem(item);
+    setShowLinkedItemPicker(false);
+
+    // Set the expense name based on the selected debt
+    if (selectedCategory?.type === "debt") {
+      setName(`${item.name} Repayment`);
+    }
+
+    if(selectedCategory?.type === "investment") {
+      setName(`${item.name} Investment`);
+    }
+
+  };
+
+  if (showDebtSetup) {
+    return (
+      <NoDebtsSetup
+        onSetupDebt={handleSetupDebt}
+        onCancel={() => {
+          setShowDebtSetup(false);
+          setSelectedCategory(null);
+        }}
+      />
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Animated.ScrollView
@@ -259,23 +310,13 @@ export const AddExpenseScreen = () => {
         scrollEventThrottle={16}
         onLayout={handleScrollViewLayout}
       >
-        <View 
-          style={styles.contentContainer}
-          onLayout={handleContentLayout}
-        >
+        <View style={styles.contentContainer} onLayout={handleContentLayout}>
           <Text style={styles.title}>Expense</Text>
-
-          <TextInput
-            style={styles.nameInput}
-            placeholder="Expense name"
-            value={name}
-            onChangeText={setName}
-            maxLength={50}
-          />
 
           <Dropdown
             label="Category"
             value={selectedCategory?.name || ""}
+            placeholder="Select a category"
             options={categories.map((c) => ({
               id: c.id.toString(),
               label: c.name,
@@ -286,8 +327,7 @@ export const AddExpenseScreen = () => {
             onPress={() => setShowCategoryPicker(true)}
             onSelect={(option) => {
               const category = categories.find((c) => c.name === option.value)!;
-              handleCategoryChange(category);
-              setShowCategoryPicker(false);
+              handleCategorySelect(category);
             }}
             renderIcon={(option) => (
               <MaterialCommunityIcons
@@ -311,21 +351,23 @@ export const AddExpenseScreen = () => {
                 }))}
                 showPicker={showLinkedItemPicker}
                 onPress={() => setShowLinkedItemPicker(true)}
-                onSelect={(option) => {
-                  const item = linkedItems.find((i) => i.name === option.value)!;
-                  setSelectedLinkedItem(item);
-                  setShowLinkedItemPicker(false);
-                }}
+                onSelect={handleLinkedItemSelect}
               />
             )}
-
-          <AmountInput amount={amount} currencySymbol={currency.symbol} />
+          <TextInput
+            style={styles.nameInput}
+            placeholder="Expense name"
+            value={name}
+            onChangeText={setName}
+            maxLength={50}
+          />
+          <AmountInput amount={amount} currencySymbol={defaultCurrency} />
           <Numpad
             onNumberPress={handleNumberPress}
             onDelete={handleDelete}
             onCurrencySelect={selectCurrency}
             currencies={CURRENCIES}
-            selectedCurrency={currency}
+            selectedCurrency={defaultCurrency}
             date={date}
             onDatePress={handleDatePress}
             showDatePicker={showDatePicker}
@@ -344,9 +386,9 @@ export const AddExpenseScreen = () => {
       </Animated.ScrollView>
 
       <ScrollIndicator
-        scrollY={scrollY} 
+        scrollY={scrollY}
         maxScroll={maxScroll}
-        isScrolling={isScrolling} 
+        isScrolling={isScrolling}
         isScrollable={isScrollable}
       />
 
@@ -402,7 +444,7 @@ const styles = StyleSheet.create({
   commentInput: {
     fontSize: 16,
     color: "#8A8A8A",
-    backgroundColor: '#F5F6FA',
+    backgroundColor: "#F5F6FA",
     marginBottom: 24,
     padding: 16,
     minHeight: 60,

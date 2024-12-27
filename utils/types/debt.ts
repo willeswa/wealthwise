@@ -1,5 +1,7 @@
 export type RepaymentFrequency = 'One-time' | 'Weekly' | 'Monthly' | 'Yearly';
 
+export type RepaymentPeriodUnit = 'Weeks' | 'Months' | 'Years';
+
 export interface Debt {
   id?: number;
   creditor: string;
@@ -25,8 +27,22 @@ export interface DebtRepayment {
   created_at?: string;
 }
 
-export type DebtInput = Omit<Debt, 'id' | 'created_at' | 'updated_at' | 'remaining_amount'>;
+export type DebtInput = Omit<Debt, 'id' | 'created_at' | 'updated_at' | 'remaining_amount'> & {
+  repayment_period?: number;
+  period_unit?: RepaymentPeriodUnit;
+  manual_end_date?: boolean;
+};
+
 export type DebtRepaymentInput = Omit<DebtRepayment, 'id' | 'created_at'>;
+
+export interface DebtPaymentStatus {
+  id?: number;
+  debt_id: number;
+  month: string; // YYYY-MM format
+  status: 'paid' | 'missed';
+  penalty_rate: number;
+  created_at?: string;
+}
 
 export interface DebtSummary {
   totalOutstanding: number;
@@ -51,4 +67,12 @@ export interface DebtSummary {
       label: string;
     }>;
   };
+  missedPayments: number;
+  totalPenalties: number;
+  paymentHistory: {
+    month: string;
+    status: 'paid' | 'missed';
+    originalAmount: number;
+    penaltyAmount: number;
+  }[];
 }

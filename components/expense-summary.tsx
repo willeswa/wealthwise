@@ -6,6 +6,7 @@ import { ActivityIndicator, StyleSheet, Text, View, Pressable } from "react-nati
 import { colors } from '../utils/colors';
 import { formatCurrency } from "../utils/format";
 import { EmptyState } from "./empty-state";
+import { router } from "expo-router";
 
 type Props = {
   expenses: Array<Expense>;
@@ -59,9 +60,10 @@ export const ExpenseSummary = ({ expenses, totalIncome, loading, error, defaultC
   const totalExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
   const incomePercentage = totalIncome > 0 ? (totalExpenses / totalIncome) * 100 : 0;
 
-  // Calculate category totals and percentages
+  // Calculate category totals and percentages using category_name
   const categoryTotals = expenses.reduce((acc, expense) => {
-    acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+    const categoryName = expense.category_name;
+    acc[categoryName] = (acc[categoryName] || 0) + expense.amount;
     return acc;
   }, {} as Record<string, number>);
 
@@ -69,7 +71,8 @@ export const ExpenseSummary = ({ expenses, totalIncome, loading, error, defaultC
     .map(([category, amount]) => ({
       category,
       amount,
-      percentage: (amount / totalExpenses) * 100
+      percentage: (amount / totalExpenses) * 100,
+      type: expenses.find(e => e.category_name === category)?.linked_item_type || 'general'
     }))
     .sort((a, b) => b.amount - a.amount);
 
@@ -86,7 +89,7 @@ export const ExpenseSummary = ({ expenses, totalIncome, loading, error, defaultC
 
       <View style={styles.categoriesSection}>
         <Text style={styles.sectionTitle}>Top Categories</Text>
-        {categoryStats.slice(0, 3).map(({ category, amount, percentage }) => (
+        {categoryStats.slice(0, 3).map(({ category, amount, percentage, type }) => (
           <View key={category} style={styles.categoryItem}>
             <View style={styles.categoryHeader}>
               <Text style={styles.categoryName}>{category}</Text>
@@ -94,13 +97,27 @@ export const ExpenseSummary = ({ expenses, totalIncome, loading, error, defaultC
                 {formatCurrency(amount, defaultCurrency)}
               </Text>
             </View>
-       
+            <View style={styles.categoryDetails}>
+              <View style={styles.categoryBarContainer}>
+                <View 
+                  style={[
+                    styles.categoryBar, 
+                    { width: `${Math.min(percentage, 100)}%` }
+                  ]} 
+                />
+              </View>
+              <Text style={styles.categoryPercentage}>
+                {percentage.toFixed(1)}%
+              </Text>
+            </View>
           </View>
         ))}
         {categoryStats.length > 0 && (
           <Pressable 
             style={styles.showAllButton}
-            onPress={() => console.log('Show all expenses pressed')}
+            onPress={() => router.push({
+                        pathname: "/(tabs)/budget"
+                      })}
           >
             <Text style={styles.showAllText}>Show All</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.accent} />
@@ -123,7 +140,7 @@ export const ExpenseSummary = ({ expenses, totalIncome, loading, error, defaultC
                 {formatCurrency(largestExpense.amount, defaultCurrency)}
               </Text>
               <Text style={styles.expenseCategory}>
-                {largestExpense.category}
+                {largestExpense.category_name}
               </Text>
               <Text style={styles.expenseDate}>
                 {format(new Date(largestExpense.date), 'MMM d, yyyy')}

@@ -20,7 +20,7 @@ const LIQUIDITY_OPTIONS = [
 ];
 
 export const AddInvestmentScreen = () => {
-  const { addNewInvestment, fetchInvestmentTypes, investmentTypes } = useInvestmentStore();
+  const { addNewInvestment, fetchInvestmentTypes, investmentTypes, defaultCurrency } = useInvestmentStore();
   const { closeModal } = useModalStore();
 
   // Fetch investment types on component mount
@@ -31,7 +31,7 @@ export const AddInvestmentScreen = () => {
   // Updated state to match new schema
   const [name, setName] = useState("");
   const [type, setType] = useState<string>("");
-  const [currentValue, setCurrentValue] = useState("0.00");
+  const [currentValue, setCurrentValue] = useState("");
   const [liquidity, setLiquidity] = useState<Liquidity>('Liquid');
   const [riskLevel, setRiskLevel] = useState<RiskLevel>('Medium');
   const [notes, setNotes] = useState("");
@@ -150,15 +150,26 @@ export const AddInvestmentScreen = () => {
         >
           <Text style={styles.title}>Add Investment</Text>
 
-          <TextInput
-            style={styles.nameInput}
-            placeholder="Investment Name"
-            value={name}
-            onChangeText={setName}
-          />
+          <View style={styles.formContainer}>
+            {/* 1. Name - Primary identifier */}
+            <TextInput
+              style={styles.nameInput}
+              placeholder="Investment Name"
+              value={name}
+              onChangeText={setName}
+              placeholderTextColor="#8A8A8A"
+            />
 
-          {/* Add gap={16} to create consistent spacing between elements */}
-          <View style={{ gap: 16 }}>
+            {/* 2. Amount - Making it real */}
+            <AmountInput
+              label="Initial Amount"
+              amount={currentValue}
+              currencySymbol={defaultCurrency}
+              onChangeValue={setCurrentValue}
+              useSystemKeyboard={true}
+            />
+
+            {/* 3. Investment Type - Categorization */}
             <Dropdown
               label="Investment Type"
               value={type}
@@ -168,14 +179,7 @@ export const AddInvestmentScreen = () => {
               onSelect={handleInvestmentTypeSelect}
             />
 
-            <AmountInput
-              label="Current Value"
-              amount={currentValue}
-              currencySymbol="KES"
-              onChangeValue={setCurrentValue}
-              useSystemKeyboard={true}
-            />
-
+            {/* 4. Risk Level - Key decision point */}
             <Dropdown
               label="Risk Level"
               value={riskLevel}
@@ -188,8 +192,9 @@ export const AddInvestmentScreen = () => {
               }}
             />
 
+            {/* 5. Liquidity - Secondary characteristic */}
             <Dropdown
-              label="Liquidity"
+              label="Accessebility"
               value={liquidity}
               options={LIQUIDITY_OPTIONS}
               showPicker={showLiquidityDropdown}
@@ -200,9 +205,10 @@ export const AddInvestmentScreen = () => {
               }}
             />
 
+            {/* 6. Notes - Additional context */}
             <TextInput
               style={[styles.commentInput]}
-              placeholder="Notes (optional)"
+              placeholder="Add any notes or details about this investment (optional)"
               value={notes}
               onChangeText={setNotes}
               multiline
@@ -246,6 +252,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 24,
     paddingBottom: 24,
+    
   },
   bottomContainer: {
     paddingHorizontal: 16,
@@ -265,30 +272,35 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   title: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 24, // Increased size
+    fontWeight: "700",
     textAlign: "center",
-    marginBottom: 16,
-    color: "#929ABE",
+    marginBottom: 28, // More space after title
+    color: "#232D59",
   },
   nameInput: {
-    fontSize: 16,
-    color: "#8A8A8A",
+    fontSize: 18, // Increased size for primary input
+    color: "#232D59",
     borderWidth: 1,
     borderColor: "#EAEAEA",
     paddingHorizontal: 16,
-    height: 43,
+    height: 48,
     borderRadius: 32,
-    marginBottom: 16,
+    marginBottom: 24, // More space after name
+    fontWeight: '500',
   },
   commentInput: {
     fontSize: 16,
     color: "#8A8A8A",
     backgroundColor: '#F5F6FA',
     padding: 16,
-    minHeight: 60,
+    minHeight: 80, // Increased height for notes
     textAlignVertical: "top",
-    paddingTop: 8,
-    borderRadius: 8,
+    paddingTop: 12,
+    borderRadius: 12,
+    marginTop: 8, // Extra space before notes
+  },
+  formContainer: {
+    gap: 20, // Increased gap for better visual hierarchy
   },
 });

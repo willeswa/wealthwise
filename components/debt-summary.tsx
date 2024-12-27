@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   ScrollView,
@@ -14,6 +14,7 @@ import { Card } from "./card";
 import { EmptyState } from "./empty-state";
 import { Legend } from "./legend";
 import { colors } from "@/utils/colors";
+import { getDefaultCurrency } from '../utils/db/utils/settings';
 
 type Props = {
   onAddNew: () => void;
@@ -22,8 +23,14 @@ const width = Dimensions.get("window").width;
 
 export const DebtSummary = ({ onAddNew }: Props) => {
   const { summary, loading, fetchSummary } = useDebtStore();
+  const [currency, setCurrency] = useState<string>('USD');
 
   useEffect(() => {
+    const loadDefaultCurrency = async () => {
+      const defaultCurrency = await getDefaultCurrency();
+      setCurrency(defaultCurrency);
+    };
+    loadDefaultCurrency();
     fetchSummary();
   }, []);
 
@@ -45,13 +52,11 @@ export const DebtSummary = ({ onAddNew }: Props) => {
     if (!summary?.debts) return { barData: [] };
 
     return {
-      barData: summary?.debts.map((debt, index) => {
-        return {
-          value: debt.payment_amount ?? 0,
-          label: debt.creditor,
-          frontColor: chartColors[index % chartColors.length],
-        };
-      }),
+      barData: summary.debts.map((debt, index) => ({
+        value: debt.total_amount,
+        label: debt.creditor,
+        frontColor: chartColors[index % chartColors.length],
+      })),
     };
   };
 
@@ -72,7 +77,7 @@ export const DebtSummary = ({ onAddNew }: Props) => {
     const legendItems = barData.map((item) => ({
       color: item.frontColor,
       label: item.label,
-      value: `$${item.value.toLocaleString()}`,
+      value: `${currency} ${item.value.toLocaleString()}`,
     }));
 
     return (
@@ -96,7 +101,7 @@ export const DebtSummary = ({ onAddNew }: Props) => {
   };
 
   return (
-    <Card>
+    <Card variant="debt">
       <View style={styles.header}>
         <Text style={styles.cardTitle}>Monthly Debt Summary</Text>
         <Pressable
@@ -123,9 +128,9 @@ export const DebtSummary = ({ onAddNew }: Props) => {
           <View style={styles.summarySection}>
             {/* Total Debt Overview */}
             <View style={styles.mainStatCard}>
-              <Text style={styles.mainStatLabel}>Total Monthly Repayments</Text>
+              <Text style={styles.mainStatLabel}>Total Outstanding Debt</Text>
               <Text style={styles.mainStatValue}>
-                ${summary.totalOutstanding.toLocaleString()}
+                {currency} {summary.totalOutstanding.toLocaleString()}
               </Text>
               <View style={styles.subStatsRow}>
                 <Text style={styles.subStatLabel}>
@@ -158,13 +163,12 @@ export const DebtSummary = ({ onAddNew }: Props) => {
                 <View style={styles.insightContent}>
                   <Text style={styles.insightLabel}>Next Payment</Text>
                   <Text style={styles.insightTitle}>
-                    ${summary.highestInterestDebt?.payment_amount || 0}
+                    {currency} {summary.monthlyRepaymentTotal?.toLocaleString() || 0}
                   </Text>
                   <Text style={styles.insightValue}>
-                    Due{" "}
-                    {new Date(
-                      summary.upcomingPayment?.dueDate || new Date()
-                    ).toLocaleDateString()}
+                    Due {summary.upcomingRepayment 
+                      ? new Date(summary.upcomingRepayment.repayment.repayment_date).toLocaleDateString()
+                      : 'No upcoming payments'}
                   </Text>
                 </View>
               </View>

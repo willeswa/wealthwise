@@ -6,7 +6,6 @@ import { TabList, Tabs, TabSlot, TabTrigger } from "expo-router/ui";
 import React from "react";
 
 export default function Layout() {
-  console.log("Layout");
   return (
     <>
       <Tabs style={{ flex: 1, backgroundColor: "white" }}>
@@ -27,14 +26,14 @@ export default function Layout() {
             <TabButton icon="home">Home</TabButton>
           </TabTrigger>
           <TabTrigger name="budget" href={"/(tabs)/budget"} asChild>
-            <TabButton icon="newspaper">Budget</TabButton>
+            <TabButton icon="pie-chart">Budget</TabButton>
           </TabTrigger>
             <CenterButton />
           <TabTrigger name="debt" href={"/(tabs)/debt"} asChild>
-            <TabButton icon="newspaper">Debt</TabButton>
+            <TabButton icon="trending-down">Debt</TabButton>
           </TabTrigger>
           <TabTrigger name="investment" href={"/(tabs)/investment"} asChild>
-            <TabButton icon="newspaper">Portfolio</TabButton>
+            <TabButton icon="trending-up">Portfolio</TabButton>
           </TabTrigger>
         </TabList>
       </Tabs>

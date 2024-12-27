@@ -1,8 +1,9 @@
+import { ExpenseStatus } from "@/utils/types/expense";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from 'date-fns';
-import React from "react";
+import React, { useRef } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Swipeable } from "react-native-gesture-handler";
+import { Pressable, Swipeable } from "react-native-gesture-handler";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { colors } from "../utils/colors";
 import { formatCurrency } from "../utils/format";
@@ -17,6 +18,8 @@ type ExpenseListItemProps = {
   currency?: string;
   onDelete?: (id: string) => void;
   onEdit?: (id: string) => void;
+  status: ExpenseStatus;
+  onToggleStatus: (id: string) => void;
 };
 
 export const ExpenseListItem = ({
@@ -26,37 +29,79 @@ export const ExpenseListItem = ({
   category,
   date,
   description,
-  currency = "USD",
+  currency,
   onDelete,
   onEdit,
+  status,
+  onToggleStatus,
 }: ExpenseListItemProps) => {
-  console.log({name, category})
+  console.log(currency)
+  const swipeableRef = useRef<Swipeable>(null);
+
+  const closeSwipeable = () => {
+    swipeableRef.current?.close();
+  };
+
+  const handleDelete = (id: string) => {
+    onDelete?.(id);
+    closeSwipeable();
+  };
+
+  const handleToggleStatus = (id: string) => {
+    onToggleStatus(id);
+    closeSwipeable();
+  };
+
   const renderRightActions = () => (
     <View style={styles.rightActions}>
-      <Animated.View 
-        entering={FadeIn}
-        style={[styles.actionButton, styles.editButton]}
-      >
-        <Ionicons name="pencil" size={16} color={colors.background.main} />
-      </Animated.View>
+     
       <Animated.View 
         entering={FadeIn}
         style={[styles.actionButton, styles.deleteButton]}
       >
-        <Ionicons name="trash" size={16} color={colors.background.main} />
+        <Pressable onPress={() => handleDelete(id)} style={styles.actionButton}>
+          <Ionicons 
+            name="trash" 
+            size={16} 
+            color={colors.background.main} 
+          />
+          <Text style={{ color: colors.background.main }}>Delete</Text>
+        </Pressable>
+      </Animated.View>
+      <Animated.View 
+        entering={FadeIn}
+        style={[
+          status === 'paid' ? styles.paidButton : styles.unpaidButton
+        ]}
+      >
+        <Pressable onPress={() => handleToggleStatus(id)} style={styles.actionButton}>
+          <Ionicons 
+            name={status === 'paid' ? "checkmark" : "close"} 
+            size={16} 
+            color={colors.background.main} 
+          />
+          <Text style={{ color: colors.background.main }}>
+            {status === 'paid' ? 'Mark Unpaid' : 'Mark Paid'}
+          </Text>
+        </Pressable>
       </Animated.View>
     </View>
   );
+  
 
   return (
     <Swipeable
+      ref={swipeableRef}
       renderRightActions={renderRightActions}
-      onSwipeableRightOpen={() => onDelete?.(id)}
+      friction={2}
+      overshootRight={false}
     >
-      <View style={styles.container}>
+      <View style={[
+        styles.container,
+      ]}>
         <View style={styles.mainContent}>
           <View style={styles.leftSection}>
-            <Text style={styles.name} numberOfLines={1}>
+            <Text style={styles.name} numberOfLines={2}>
               {name}
             </Text>
            
@@ -75,9 +120,16 @@ export const ExpenseListItem = ({
             <Text style={styles.amount}>
               {formatCurrency(amount, currency)}
             </Text>
-            <View style={styles.tagContainer}>
-              <Text style={styles.tag}>
-                {getCategoryEmoji(category)}
+            <View style={styles.statusContainer}>
+              <View style={[
+                styles.statusDot,
+                status === 'paid' ? styles.paidDot : styles.pendingDot
+              ]} />
+              <Text style={[
+                styles.statusText,
+                status === 'paid' ? styles.paidText : styles.pendingText
+              ]}>
+                {status === 'paid' ? 'Paid' : 'Pending'}
               </Text>
             </View>
           </View>
@@ -111,6 +163,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
     marginBottom: 2,
+    flex: 1
   },
   description: {
     fontSize: 15,
@@ -156,16 +209,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButton: {
-    width: 40,
-    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+    height: '100%',
+
+   minWidth: 80,
   },
   editButton: {
     backgroundColor: colors.accent,
   },
   deleteButton: {
     backgroundColor: "#FF4040",
+  },
+  paidButton: {
+    backgroundColor: colors.success,
+  },
+  unpaidButton: {
+    backgroundColor: colors.warning,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  paidDot: {
+    backgroundColor: colors.success,
+  },
+  pendingDot: {
+    backgroundColor: colors.warning,
+  },
+  paidText: {
+    color: colors.success,
+  },
+  pendingText: {
+    color: colors.warning,
   },
 });
 
@@ -175,7 +261,7 @@ const getCategoryEmoji = (category: string): string => {
     Food: '🍔',
     Transport: '🚗',
     Bills: '📄',
-    Rent: '🏠',
+    Housing: '🏠',
     Education: '📚',
     Healthcare: '🏥',
     Entertainment: '🎮',

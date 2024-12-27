@@ -11,6 +11,31 @@ export const initDatabase = async () => {
       PRAGMA journal_mode = WAL;
       PRAGMA foreign_keys = ON;
       
+      -- First check if the expenses table exists
+      CREATE TABLE IF NOT EXISTS _temp_check (name TEXT);
+      INSERT INTO _temp_check (name) 
+      SELECT 'expenses_exists' 
+      WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='expenses');
+      
+      -- Create the new expenses table with all columns
+      CREATE TABLE IF NOT EXISTS expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        currency TEXT NOT NULL,
+        category_id INTEGER NOT NULL,
+        linked_item_id INTEGER,
+        linked_item_type TEXT CHECK(linked_item_type IN ('investment', 'debt')),
+        comment TEXT,
+        date TEXT NOT NULL,
+        status TEXT CHECK(status IN ('pending', 'paid', 'missed')) DEFAULT 'pending',
+        due_date TEXT,
+        paid_date TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (category_id) REFERENCES expense_categories(id)
+      );
+
+      -- Create income table
       CREATE TABLE IF NOT EXISTS income (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         amount DECIMAL(10,2) NOT NULL,
@@ -29,22 +54,6 @@ export const initDatabase = async () => {
         icon TEXT NOT NULL,
         description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      -- Drop and recreate expenses table with new structure
-      DROP TABLE IF EXISTS expenses;
-      CREATE TABLE IF NOT EXISTS expenses (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        amount DECIMAL(10,2) NOT NULL,
-        currency TEXT NOT NULL,
-        category_id INTEGER NOT NULL,
-        linked_item_id INTEGER,
-        linked_item_type TEXT CHECK(linked_item_type IN ('investment', 'debt')),
-        comment TEXT,
-        date TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (category_id) REFERENCES expense_categories(id)
       );
 
       -- Create triggers to enforce referential integrity for linked items
@@ -87,7 +96,7 @@ export const initDatabase = async () => {
         ('Entertainment', 'general', 'movie', 'Entertainment expenses'),
         ('Healthcare', 'general', 'hospital', 'Medical and healthcare costs'),
         ('Education', 'general', 'school', 'Education expenses'),
-        ('Rent', 'general', 'home', 'Housing costs'),
+        ('Housing', 'general', 'home', 'Housing costs'),
         ('Utilities', 'general', 'water', 'Utility bills'),
         ('Insurance', 'general', 'shield', 'Insurance payments'),
         ('Investment', 'investment', 'chart-line', 'Investment contributions'),
@@ -109,10 +118,7 @@ export const initDatabase = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
-      -- Drop existing debts table
-      DROP TABLE IF EXISTS debts;
-
-      -- Create new debts table
+      -- Create new debts table with repayment period fields
       CREATE TABLE IF NOT EXISTS debts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         creditor TEXT NOT NULL,
@@ -124,6 +130,9 @@ export const initDatabase = async () => {
         expected_end_date TEXT NOT NULL,
         frequency TEXT NOT NULL DEFAULT 'Monthly'
           CHECK(frequency IN ('One-time', 'Weekly', 'Monthly', 'Yearly')),
+        repayment_period INTEGER,
+        period_unit TEXT CHECK(period_unit IN ('Weeks', 'Months', 'Years')),
+        manual_end_date BOOLEAN DEFAULT 0,
         notes TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -133,6 +142,7 @@ export const initDatabase = async () => {
       CREATE TABLE IF NOT EXISTS debt_repayments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         debt_id INTEGER NOT NULL,
+        expense_id INTEGER,
         amount REAL NOT NULL,
         repayment_date TEXT NOT NULL,
         frequency TEXT DEFAULT 'One-time' 
@@ -140,7 +150,9 @@ export const initDatabase = async () => {
         notes TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (debt_id) REFERENCES debts(id)
-          ON DELETE CASCADE
+          ON DELETE CASCADE,
+        FOREIGN KEY (expense_id) REFERENCES expenses(id)
+          ON DELETE SET NULL
       );
 
       -- Create index for faster lookups
@@ -175,9 +187,6 @@ export const initDatabase = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(name)
       );
-
-      -- Drop existing investments table if exists
-      DROP TABLE IF EXISTS investments;
       
       -- Create new simplified investments table
       CREATE TABLE IF NOT EXISTS investments (
@@ -193,7 +202,8 @@ export const initDatabase = async () => {
         FOREIGN KEY (type) REFERENCES investments_types(name)
       );
 
-      -- Create new contributions table
+      -- Create new contributions table with expense_id included
+      DROP TABLE IF EXISTS contributions;
       CREATE TABLE IF NOT EXISTS contributions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         investment_id INTEGER NOT NULL,
@@ -202,14 +212,21 @@ export const initDatabase = async () => {
         frequency TEXT DEFAULT 'One-time' 
           CHECK(frequency IN ('One-time', 'Weekly', 'Monthly', 'Yearly')),
         notes TEXT,
+        expense_id INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (investment_id) REFERENCES investments(id)
-          ON DELETE CASCADE
+          ON DELETE CASCADE,
+        FOREIGN KEY (expense_id) REFERENCES expenses(id)
+          ON DELETE SET NULL
       );
 
       -- Create index for faster lookups
       CREATE INDEX IF NOT EXISTS idx_contributions_investment_id 
         ON contributions(investment_id);
+
+      -- Create index for expense relationships
+      CREATE INDEX IF NOT EXISTS idx_contributions_expense_id
+        ON contributions(expense_id);
 
       -- Create trigger to update investment updated_at
       CREATE TRIGGER IF NOT EXISTS update_investment_timestamp 
@@ -225,6 +242,162 @@ export const initDatabase = async () => {
       
       -- Set default country to Kenya
       INSERT OR IGNORE INTO settings (key, value) VALUES ('country_code', 'KE');
+
+      -- Create insights table for caching calculated metrics
+      CREATE TABLE IF NOT EXISTS budget_insights (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        month TEXT NOT NULL,
+        year INTEGER NOT NULL,
+        total_spending DECIMAL(15,2) NOT NULL,
+        mom_change DECIMAL(5,2),
+        highest_increase_category TEXT,
+        highest_increase_percentage DECIMAL(5,2),
+        upcoming_bills_count INTEGER,
+        savings_goal_progress DECIMAL(5,2),
+        last_calculated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(month, year)
+      );
+
+      -- Create trigger to update last_calculated timestamp
+      CREATE TRIGGER IF NOT EXISTS update_insights_timestamp 
+      AFTER UPDATE ON budget_insights
+      BEGIN
+        UPDATE budget_insights 
+        SET last_calculated = CURRENT_TIMESTAMP 
+        WHERE id = NEW.id;
+      END;
+
+      -- Create debt_payment_status table
+      CREATE TABLE IF NOT EXISTS debt_payment_status (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        debt_id INTEGER NOT NULL,
+        month TEXT NOT NULL, -- YYYY-MM format
+        status TEXT CHECK(status IN ('paid', 'missed')) NOT NULL,
+        penalty_rate DECIMAL(5,2) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (debt_id) REFERENCES debts(id) ON DELETE CASCADE,
+        UNIQUE(debt_id, month)
+      );
+
+      -- Create index for faster lookups
+      CREATE INDEX IF NOT EXISTS idx_debt_payment_status 
+        ON debt_payment_status(debt_id, month);
+
+      -- Create investment_performance table
+      CREATE TABLE IF NOT EXISTS investment_performance (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        investment_id INTEGER NOT NULL,
+        value DECIMAL(15,2) NOT NULL,
+        return_rate DECIMAL(6,2),
+        date TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (investment_id) REFERENCES investments(id)
+          ON DELETE CASCADE
+      );
+
+      -- Create index for faster lookups
+      CREATE INDEX IF NOT EXISTS idx_investment_performance 
+        ON investment_performance(investment_id, date);
+
+      -- Create trigger to automatically track performance when value changes
+      CREATE TRIGGER IF NOT EXISTS track_investment_performance
+      AFTER UPDATE OF current_value ON investments
+      BEGIN
+        INSERT INTO investment_performance (
+          investment_id, 
+          value,
+          return_rate,
+          date
+        ) 
+        VALUES (
+          NEW.id,
+          NEW.current_value,
+          CASE 
+            WHEN (SELECT value FROM investment_performance 
+                  WHERE investment_id = NEW.id 
+                  ORDER BY date DESC LIMIT 1) IS NOT NULL 
+            THEN (
+              (NEW.current_value - (SELECT value FROM investment_performance 
+                                  WHERE investment_id = NEW.id 
+                                  ORDER BY date DESC LIMIT 1)) /
+              (SELECT value FROM investment_performance 
+               WHERE investment_id = NEW.id 
+               ORDER BY date DESC LIMIT 1) * 100
+            )
+            ELSE 0
+          END,
+          date('now')
+        );
+      END;
+
+      -- Remove duplicate triggers first
+      DROP TRIGGER IF EXISTS handle_investment_expense;
+      DROP TRIGGER IF EXISTS handle_investment_expense_deletion;
+
+      -- Create single trigger for investment expense creation
+      CREATE TRIGGER IF NOT EXISTS handle_investment_expense
+      AFTER INSERT ON expenses
+      WHEN NEW.linked_item_type = 'investment'
+      BEGIN
+        -- Only create contribution record
+        INSERT INTO contributions (
+          investment_id,
+          amount,
+          contribution_date,
+          frequency,
+          notes,
+          expense_id
+        ) VALUES (
+          NEW.linked_item_id,
+          NEW.amount,
+          NEW.date,
+          'One-time',
+          NEW.comment,
+          NEW.id
+        );
+        
+        -- Update investment value only if expense is already paid
+        UPDATE investments
+        SET current_value = CASE 
+          WHEN NEW.status = 'paid' THEN current_value + NEW.amount
+          ELSE current_value
+        END
+        WHERE id = NEW.linked_item_id;
+      END;
+
+      -- Create trigger for expense status changes
+      CREATE TRIGGER IF NOT EXISTS handle_investment_expense_status
+      AFTER UPDATE OF status ON expenses
+      WHEN NEW.linked_item_type = 'investment'
+      BEGIN
+        UPDATE investments
+        SET current_value = CASE 
+          WHEN NEW.status = 'paid' AND OLD.status != 'paid' 
+            THEN current_value + NEW.amount
+          WHEN OLD.status = 'paid' AND NEW.status != 'paid' 
+            THEN current_value - NEW.amount
+          ELSE current_value
+        END
+        WHERE id = NEW.linked_item_id;
+      END;
+
+      -- Create single trigger for expense deletion
+      CREATE TRIGGER IF NOT EXISTS handle_investment_expense_deletion
+      BEFORE DELETE ON expenses
+      WHEN OLD.linked_item_type = 'investment'
+      BEGIN
+        -- Only revert the investment value if expense was paid
+        UPDATE investments
+        SET current_value = CASE 
+          WHEN OLD.status = 'paid' THEN current_value - OLD.amount
+          ELSE current_value
+        END
+        WHERE id = OLD.linked_item_id;
+        
+        -- Delete associated contribution
+        DELETE FROM contributions
+        WHERE expense_id = OLD.id;
+      END;
     `);
 
     // Seed investment types after table creation

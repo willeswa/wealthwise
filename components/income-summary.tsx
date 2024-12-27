@@ -1,10 +1,17 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { format } from 'date-fns';
+import { format } from "date-fns";
 import React from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
-import { colors } from '../utils/colors';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { colors } from "../utils/colors";
 import { formatCurrency } from "../utils/format";
 import { EmptyState } from "./empty-state";
+import { router } from "expo-router";
 
 type Props = {
   incomes: any[];
@@ -22,7 +29,13 @@ const FrequencyBadge = ({ frequency }: { frequency: string }) => (
   </View>
 );
 
-export const IncomeSummary = ({ incomes, loading, error, defaultCurrency, onAddNew }: Props) => {
+export const IncomeSummary = ({
+  incomes,
+  loading,
+  error,
+  defaultCurrency,
+  onAddNew,
+}: Props) => {
   if (error) {
     return <Text style={styles.error}>{error}</Text>;
   }
@@ -52,7 +65,7 @@ export const IncomeSummary = ({ incomes, loading, error, defaultCurrency, onAddN
           {formatCurrency(totalAmount, defaultCurrency)}
         </Text>
         <Text style={styles.subtext}>
-          {`${incomes.length} source${incomes.length !== 1 ? 's' : ''}`}
+          {`${incomes.length} source${incomes.length !== 1 ? "s" : ""}`}
         </Text>
       </View>
 
@@ -60,15 +73,15 @@ export const IncomeSummary = ({ incomes, loading, error, defaultCurrency, onAddN
         {incomes.slice(0, 3).map((item) => (
           <View key={item.id} style={styles.incomeItem}>
             <View style={styles.itemMain}>
-              <MaterialCommunityIcons 
+              <MaterialCommunityIcons
                 name="wallet-outline"
-                size={20} 
+                size={20}
                 color={colors.accent}
                 style={styles.icon}
               />
               <View>
                 <Text style={styles.itemPrimary}>
-                  {formatCurrency(item.amount, item.currency)}
+                  {formatCurrency(item.amount, defaultCurrency)}
                 </Text>
                 {/* <Text style={styles.itemSecondary}>
                   {format(item.frequency, item.date)}
@@ -79,9 +92,13 @@ export const IncomeSummary = ({ incomes, loading, error, defaultCurrency, onAddN
           </View>
         ))}
         {incomes.length > 0 && (
-          <Pressable 
+          <Pressable
             style={styles.showAllButton}
-            onPress={() => console.log('Show all income pressed')}
+            onPress={() =>
+              router.push({
+                pathname: "/(tabs)/budget",
+              })
+            }
           >
             <Text style={styles.showAllText}>Show All</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.accent} />
@@ -97,36 +114,36 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   headerSection: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 4,
     paddingTop: 16,
   },
   totalAmount: {
     fontSize: 32,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.primary,
     letterSpacing: -1,
   },
   subtext: {
     fontSize: 12,
     color: colors.text.light,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 1,
   },
   listSection: {
     gap: 8,
   },
   incomeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 12,
     backgroundColor: colors.background.highlight,
     borderRadius: 12,
   },
   itemMain: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   icon: {
@@ -136,7 +153,7 @@ const styles = StyleSheet.create({
   },
   itemPrimary: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.primary,
   },
   itemSecondary: {
@@ -151,20 +168,20 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: "500",
     color: colors.text.secondary,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   error: {
-    color: 'red',
+    color: "red",
     fontSize: 13,
-    textAlign: 'center',
+    textAlign: "center",
   },
   showAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-end',
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-end",
     paddingVertical: 8,
     paddingHorizontal: 12,
     marginTop: 8,
@@ -174,7 +191,7 @@ const styles = StyleSheet.create({
   },
   showAllText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.accent,
-  }
+  },
 });
