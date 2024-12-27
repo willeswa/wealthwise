@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { format } from "date-fns";
 import React, { useEffect, useRef, useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Animated, StyleSheet, Text, TextInput, View, LayoutChangeEvent } from "react-native";
 import { useExpenseStore } from "../store/expense-store";
 import { useModalStore } from "../store/modal-store";
 import { getDebts } from "../utils/db/debt";
@@ -13,6 +13,7 @@ import { Button } from "./Button";
 import { CustomDatePicker } from "./CustomDatePicker";
 import { Dropdown } from "./Dropdown";
 import { CurrencyType, Numpad } from "./Numpad";
+import { ScrollIndicator } from "./scroll-indicator";
 
 const CURRENCIES: CurrencyType[] = [
   { symbol: "$", code: "USD", name: "US Dollar" },
@@ -57,11 +58,46 @@ export const AddExpenseScreen = () => {
   } | null>(null);
   const [showLinkedItemPicker, setShowLinkedItemPicker] = useState(false);
 
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollEndTimer = useRef<NodeJS.Timeout>();
+  const maxScroll = 300;
+  const scrollViewRef = useRef(null);
+  const [isScrollable, setIsScrollable] = useState(false);
+  const [contentHeight, setContentHeight] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
+
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { 
+      useNativeDriver: true,
+      listener: () => {
+        setIsScrolling(true);
+        
+        if (scrollEndTimer.current) {
+          clearTimeout(scrollEndTimer.current);
+        }
+        
+        scrollEndTimer.current = setTimeout(() => {
+          setIsScrolling(false);
+        }, 800);
+      }
+    }
+  );
+
   useEffect(() => {
     fetchCategories();
     if (categories.length > 0) {
       setSelectedCategory(categories[0]);
     }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (scrollEndTimer.current) {
+        clearTimeout(scrollEndTimer.current);
+      }
+    };
   }, []);
 
   const loadLinkedItems = async (categoryType: "investment" | "debt") => {
@@ -197,10 +233,36 @@ export const AddExpenseScreen = () => {
     }
   };
 
+  const handleScrollViewLayout = (event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setContainerHeight(height);
+    updateScrollable(height, contentHeight);
+  };
+
+  const handleContentLayout = (event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setContentHeight(height);
+    updateScrollable(containerHeight, height);
+  };
+
+  const updateScrollable = (container: number, content: number) => {
+    setIsScrollable(content > container);
+  };
+
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.contentContainer}>
+      <Animated.ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        onLayout={handleScrollViewLayout}
+      >
+        <View 
+          style={styles.contentContainer}
+          onLayout={handleContentLayout}
+        >
           <Text style={styles.title}>Expense</Text>
 
           <TextInput
@@ -279,7 +341,14 @@ export const AddExpenseScreen = () => {
             numberOfLines={3}
           />
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
+
+      <ScrollIndicator
+        scrollY={scrollY} 
+        maxScroll={maxScroll}
+        isScrolling={isScrolling} 
+        isScrollable={isScrollable}
+      />
 
       <View style={styles.bottomContainer}>
         <Button

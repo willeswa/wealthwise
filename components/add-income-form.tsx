@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useState, useRef, useEffect } from "react";
+import { StyleSheet, Text, View, ScrollView, Animated, LayoutChangeEvent } from "react-native";
 import { useIncomeStore } from '../store/income-store';
 import { IncomeInput } from '../utils/types/income';
 import { AmountInput } from './AmountInput';
@@ -10,6 +10,7 @@ import { Dropdown, DropdownOption } from './Dropdown';
 import { CurrencyType, Numpad } from './Numpad';
 import { CategoryType } from './type';
 import { useModalStore } from '../store/modal-store';
+import { ScrollIndicator } from "./scroll-indicator";
 
 // Add currency types
 
@@ -56,6 +57,14 @@ export const AddIncomeScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>(CATEGORIES[0]);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+  const maxScroll = 300; // Adjust based on content height
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollEndTimer = useRef<NodeJS.Timeout>();
+  const scrollViewRef = useRef(null);
+  const [isScrollable, setIsScrollable] = useState(false);
+  const [contentHeight, setContentHeight] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
 
   const addNewIncome = useIncomeStore(state => state.addNewIncome);
 
@@ -147,65 +156,122 @@ export const AddIncomeScreen = () => {
     icon: c.icon
   }));
 
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { 
+      useNativeDriver: true,
+      listener: () => {
+        setIsScrolling(true);
+        
+        if (scrollEndTimer.current) {
+          clearTimeout(scrollEndTimer.current);
+        }
+        
+        scrollEndTimer.current = setTimeout(() => {
+          setIsScrolling(false);
+        }, 800);
+      }
+    }
+  );
+
+  const handleScrollViewLayout = (event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setContainerHeight(height);
+    updateScrollable(height, contentHeight);
+  };
+
+  const handleContentLayout = (event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setContentHeight(height);
+    updateScrollable(containerHeight, height);
+  };
+
+  const updateScrollable = (container: number, content: number) => {
+    setIsScrollable(content > container);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (scrollEndTimer.current) {
+        clearTimeout(scrollEndTimer.current);
+      }
+    };
+  }, []);
+
   return (
     <View style={styles.container}>
-      <View style={styles.contentContainer}>
-        <Text style={styles.title}>Income</Text>
-        <AmountInput 
-          amount={amount}
-          currencySymbol={currency.symbol}
-          onPress={() => {/* handle numpad open */}}
-        />
-        
-        <Dropdown
-          label="Category"
-          value={selectedCategory.name}
-          options={categoryOptions}
-          showPicker={showCategoryPicker}
-          onPress={handleCategoryPress}
-          onSelect={(option) => {
-            const category = CATEGORIES.find(c => c.name === option.value)!;
-            selectCategory(category);
-          }}
-          renderIcon={(option) => (
-            <MaterialCommunityIcons 
-              name={option.icon as any} 
-              size={18} 
-              color="#232D59" 
+      <Animated.ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        onLayout={handleScrollViewLayout}
+      >
+        <View 
+          style={styles.contentContainer}
+          onLayout={handleContentLayout}
+        >
+          <Text style={styles.title}>Income</Text>
+          
+          <View style={{ gap: 16 }}>
+            <AmountInput 
+              amount={amount}
+              currencySymbol={currency.symbol}
+              onPress={() => {/* handle numpad open */}}
             />
-          )}
-        />
-
-        <Dropdown
-          label="Frequency"
-          value={frequency}
-          options={frequencyOptions}
-          showPicker={showFrequencyPicker}
-          onPress={toggleFrequencyPicker}
-          onSelect={(option) => {
-            setFrequency(option.value as FrequencyType);
-            setShowFrequencyPicker(false);
-          }}
-            renderIcon={(option) => (
-            <MaterialCommunityIcons 
-              name={option.icon as any} 
-              size={18} 
-              color="#232D59" 
+            
+            <Dropdown
+              label="Category"
+              value={selectedCategory.name}
+              options={categoryOptions}
+              showPicker={showCategoryPicker}
+              onPress={handleCategoryPress}
+              onSelect={(option) => {
+                const category = CATEGORIES.find(c => c.name === option.value)!;
+                selectCategory(category);
+              }}
+              renderIcon={(option) => (
+                <MaterialCommunityIcons 
+                  name={option.icon as any} 
+                  size={18} 
+                  color="#232D59" 
+                />
+              )}
             />
-          )}
-        />
 
-        <Numpad
-          onNumberPress={handleNumberPress}
-          onDelete={handleDelete}
-          onCurrencySelect={selectCurrency}
-          currencies={CURRENCIES}
-          selectedCurrency={currency}
-          date={date}
-          onDatePress={handleDatePress}
-          showDatePicker={showDatePicker}
-        />
-      </View>
+            <Dropdown
+              label="Frequency"
+              value={frequency}
+              options={frequencyOptions}
+              showPicker={showFrequencyPicker}
+              onPress={toggleFrequencyPicker}
+              onSelect={(option) => {
+                setFrequency(option.value as FrequencyType);
+                setShowFrequencyPicker(false);
+              }}
+            />
+
+            <Numpad
+              onNumberPress={handleNumberPress}
+              onDelete={handleDelete}
+              onCurrencySelect={selectCurrency}
+              currencies={CURRENCIES}
+              selectedCurrency={currency}
+              date={date}
+              onDatePress={handleDatePress}
+              showDatePicker={showDatePicker}
+            />
+          </View>
+        </View>
+      </Animated.ScrollView>
+
+      <ScrollIndicator 
+        scrollY={scrollY} 
+        maxScroll={maxScroll}
+        isScrolling={isScrolling} 
+        isScrollable={isScrollable}
+      />
 
       <View style={styles.bottomContainer}>
         <Button 
@@ -230,10 +296,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
-  contentContainer: {
+  scrollView: {
     flex: 1,
+  },
+  contentContainer: {
     paddingHorizontal: PADDING_HORIZONTAL,
     paddingTop: 24,
+    paddingBottom: 24,
   },
   title: {
     fontSize: 18,

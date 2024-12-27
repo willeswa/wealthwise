@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { format } from 'date-fns';
-import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import React, { useState, useRef, useEffect } from "react";
+import { Pressable, StyleSheet, Text, TextInput, View, ScrollView, Animated, LayoutChangeEvent } from "react-native";
 import { useDebtStore } from '../store/debt-store';
 import { useModalStore } from '../store/modal-store';
 import { DebtInput, RepaymentFrequency } from '../utils/types/debt';
@@ -11,6 +11,7 @@ import { CustomDatePicker } from './CustomDatePicker';
 import { NumberStepper } from './NumberStepper';
 import { colors } from '../utils/colors';
 import { Dropdown } from './Dropdown';
+import { ScrollIndicator } from "./scroll-indicator";
 
 const CURRENCIES = [
   { symbol: '$', code: 'USD', name: 'US Dollar' },
@@ -38,6 +39,56 @@ export const AddDebtScreen = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [frequency, setFrequency] = useState<RepaymentFrequency>('Monthly');
   const [showFrequencyPicker, setShowFrequencyPicker] = useState(false);
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+  const maxScroll = 400; // Adjust based on content height
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollEndTimer = useRef<NodeJS.Timeout>();
+  const scrollViewRef = useRef(null);
+  const [isScrollable, setIsScrollable] = useState(false);
+  const [contentHeight, setContentHeight] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
+
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { 
+      useNativeDriver: true,
+      listener: () => {
+        setIsScrolling(true);
+        
+        if (scrollEndTimer.current) {
+          clearTimeout(scrollEndTimer.current);
+        }
+        
+        scrollEndTimer.current = setTimeout(() => {
+          setIsScrolling(false);
+        }, 800);
+      }
+    }
+  );
+
+  const handleScrollViewLayout = (event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setContainerHeight(height);
+    updateScrollable(height, contentHeight);
+  };
+
+  const handleContentLayout = (event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setContentHeight(height);
+    updateScrollable(containerHeight, height);
+  };
+
+  const updateScrollable = (container: number, content: number) => {
+    setIsScrollable(content > container);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (scrollEndTimer.current) {
+        clearTimeout(scrollEndTimer.current);
+      }
+    };
+  }, []);
 
   const handleConfirm = async () => {
     if (isSubmitting) return;
@@ -79,100 +130,121 @@ export const AddDebtScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.contentContainer}>
-        <Text style={styles.title}>Add Debt</Text>
-        
-        <AmountInput 
-          amount={totalAmount}
-          currencySymbol={currency.symbol}
-          useSystemKeyboard={true}
-          onChangeValue={setTotalAmount}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Creditor Name"
-          value={creditor}
-          onChangeText={setCreditor}
-          placeholderTextColor="#8A8A8A"
-        />
-
-        <NumberStepper
-          value={interestRate}
-          onChange={setInterestRate}
-          min={0}
-          max={100}
-          step={0.1}
-          label="Interest Rate (%)"
-        />
-
-        <View style={styles.dateSelection}>
-          <Text style={styles.dateLabel}>Payment Schedule</Text>
-          <View style={styles.dateInputs}>
-            <Pressable 
-              style={styles.datePicker}
-              onPress={() => setShowStartDatePicker(true)}
-            >
-              <MaterialCommunityIcons 
-                name="calendar" 
-                size={18} 
-                color={colors.text.secondary} 
-              />
-              <Text style={styles.dateText}>
-                {format(startDate, 'MMM dd, yyyy')}
-              </Text>
-              <Text style={styles.dateHint}>Start</Text>
-            </Pressable>
-
-            <MaterialCommunityIcons 
-              name="arrow-right" 
-              size={18} 
-              color={colors.text.light} 
+      <Animated.ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        onLayout={handleScrollViewLayout}
+      >
+        <View 
+          style={styles.contentContainer}
+          onLayout={handleContentLayout}
+        >
+          <Text style={styles.title}>Add Debt</Text>
+          
+          <View style={{ gap: 16 }}>
+            <AmountInput 
+              amount={totalAmount}
+              currencySymbol={currency.symbol}
+              useSystemKeyboard={true}
+              onChangeValue={setTotalAmount}
             />
 
-            <Pressable 
-              style={styles.datePicker}
-              onPress={() => setShowEndDatePicker(true)}
-            >
-              <MaterialCommunityIcons 
-                name="calendar" 
-                size={18} 
-                color={colors.text.secondary} 
-              />
-              <Text style={styles.dateText}>
-                {format(endDate, 'MMM dd, yyyy')}
-              </Text>
-              <Text style={styles.dateHint}>End</Text>
-            </Pressable>
+            <TextInput
+              style={styles.nameInput}
+              placeholder="Creditor Name"
+              value={creditor}
+              onChangeText={setCreditor}
+              placeholderTextColor="#8A8A8A"
+            />
+
+            <NumberStepper
+              value={interestRate}
+              onChange={setInterestRate}
+              min={0}
+              max={100}
+              step={0.1}
+              label="Interest Rate (%)"
+            />
+
+            <View style={styles.dateSelection}>
+              <Text style={styles.dateLabel}>Payment Schedule</Text>
+              <View style={styles.dateInputs}>
+                <Pressable 
+                  style={styles.datePicker}
+                  onPress={() => setShowStartDatePicker(true)}
+                >
+                  <MaterialCommunityIcons 
+                    name="calendar" 
+                    size={18} 
+                    color={colors.text.secondary} 
+                  />
+                  <Text style={styles.dateText}>
+                    {format(startDate, 'MMM dd, yyyy')}
+                  </Text>
+                  <Text style={styles.dateHint}>Start</Text>
+                </Pressable>
+
+                <MaterialCommunityIcons 
+                  name="arrow-right" 
+                  size={18} 
+                  color={colors.text.light} 
+                />
+
+                <Pressable 
+                  style={styles.datePicker}
+                  onPress={() => setShowEndDatePicker(true)}
+                >
+                  <MaterialCommunityIcons 
+                    name="calendar" 
+                    size={18} 
+                    color={colors.text.secondary} 
+                  />
+                  <Text style={styles.dateText}>
+                    {format(endDate, 'MMM dd, yyyy')}
+                  </Text>
+                  <Text style={styles.dateHint}>End</Text>
+                </Pressable>
+              </View>
+            </View>
+
+            <Dropdown
+              label="Repayment Frequency"
+              value={frequency}
+              options={FREQUENCIES.map(f => ({
+                id: f,
+                label: f,
+                value: f
+              }))}
+              showPicker={showFrequencyPicker}
+              onPress={() => setShowFrequencyPicker(true)}
+              onSelect={(option) => {
+                setFrequency(option.value as RepaymentFrequency);
+                setShowFrequencyPicker(false);
+              }}
+            />
+
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Notes (optional)"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={3}
+              placeholderTextColor="#8A8A8A"
+            />
           </View>
         </View>
+      </Animated.ScrollView>
 
-        <Dropdown
-          label="Repayment Frequency"
-          value={frequency}
-          options={FREQUENCIES.map(f => ({
-            id: f,
-            label: f,
-            value: f
-          }))}
-          showPicker={showFrequencyPicker}
-          onPress={() => setShowFrequencyPicker(true)}
-          onSelect={(option) => {
-            setFrequency(option.value as RepaymentFrequency);
-            setShowFrequencyPicker(false);
-          }}
-        />
-
-        <TextInput
-          style={[styles.input, styles.notesInput]}
-          placeholder="Notes (optional)"
-          value={notes}
-          onChangeText={setNotes}
-          multiline
-          numberOfLines={3}
-          placeholderTextColor="#8A8A8A"
-        />
-      </View>
+      <ScrollIndicator 
+        scrollY={scrollY} 
+        maxScroll={maxScroll}
+        isScrolling={isScrolling} 
+        isScrollable={isScrollable}
+      />
 
       <View style={styles.bottomContainer}>
         <Button 
@@ -212,10 +284,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.main,
   },
-  contentContainer: {
+  scrollView: {
     flex: 1,
+  },
+  contentContainer: {
     paddingHorizontal: PADDING_HORIZONTAL,
     paddingTop: 24,
+    paddingBottom: 24,
   },
   title: {
     fontSize: 18,
@@ -232,6 +307,25 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingHorizontal: 8,
     height: 40,
+  },
+  nameInput: {
+    fontSize: 16,
+    color: "#8A8A8A",
+    borderWidth: 1,
+    borderColor: "#EAEAEA",
+    paddingHorizontal: 16,
+    height: 43,
+    borderRadius: 32,
+  },
+  commentInput: {
+    fontSize: 16,
+    color: "#8A8A8A",
+    backgroundColor: '#F5F6FA',
+    padding: 16,
+    minHeight: 60,
+    textAlignVertical: "top",
+    paddingTop: 8,
+    borderRadius: 8,
   },
   notesInput: {
     height: 80,
