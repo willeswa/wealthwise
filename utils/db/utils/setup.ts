@@ -122,6 +122,8 @@ export const initDatabase = async () => {
         currency TEXT NOT NULL,
         start_date TEXT NOT NULL,
         expected_end_date TEXT NOT NULL,
+        frequency TEXT NOT NULL DEFAULT 'Monthly'
+          CHECK(frequency IN ('One-time', 'Weekly', 'Monthly', 'Yearly')),
         notes TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP

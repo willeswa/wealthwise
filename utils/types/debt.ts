@@ -9,6 +9,7 @@ export interface Debt {
   currency: string;
   start_date: string;
   expected_end_date: string;
+  frequency: RepaymentFrequency;
   notes?: string;
   created_at?: string;
   updated_at?: string;

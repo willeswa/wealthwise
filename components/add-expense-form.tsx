@@ -333,10 +333,10 @@ const styles = StyleSheet.create({
   commentInput: {
     fontSize: 16,
     color: "#8A8A8A",
-    backgroundColor: "#EAEAEA",
+    backgroundColor: '#F5F6FA',
     marginBottom: 24,
-    paddingHorizontal: 8,
-    height: 40,
+    padding: 16,
+    minHeight: 60,
     textAlignVertical: "top",
     paddingTop: 8,
     borderRadius: 8,

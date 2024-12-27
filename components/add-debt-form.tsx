@@ -4,18 +4,21 @@ import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useDebtStore } from '../store/debt-store';
 import { useModalStore } from '../store/modal-store';
-import { DebtInput } from '../utils/types/debt';
+import { DebtInput, RepaymentFrequency } from '../utils/types/debt';
 import { AmountInput } from './AmountInput';
 import { Button } from './Button';
 import { CustomDatePicker } from './CustomDatePicker';
 import { NumberStepper } from './NumberStepper';
 import { colors } from '../utils/colors';
+import { Dropdown } from './Dropdown';
 
 const CURRENCIES = [
   { symbol: '$', code: 'USD', name: 'US Dollar' },
   { symbol: 'KES', code: 'KES', name: 'Kenyan Shilling' },
   { symbol: '£', code: 'GBP', name: 'British Pound' },
 ] as const;
+
+const FREQUENCIES: RepaymentFrequency[] = ['One-time', 'Weekly', 'Monthly', 'Yearly'];
 
 const PADDING_HORIZONTAL = 16;
 
@@ -33,6 +36,8 @@ export const AddDebtScreen = () => {
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [interestRate, setInterestRate] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [frequency, setFrequency] = useState<RepaymentFrequency>('Monthly');
+  const [showFrequencyPicker, setShowFrequencyPicker] = useState(false);
 
   const handleConfirm = async () => {
     if (isSubmitting) return;
@@ -56,6 +61,7 @@ export const AddDebtScreen = () => {
         total_amount: numericAmount,
         interest_rate: interestRate,
         currency: currency.code,
+        frequency,
         start_date: format(startDate, 'yyyy-MM-dd'),
         expected_end_date: format(endDate, 'yyyy-MM-dd'),
         notes: notes.trim() || undefined,
@@ -140,6 +146,22 @@ export const AddDebtScreen = () => {
             </Pressable>
           </View>
         </View>
+
+        <Dropdown
+          label="Repayment Frequency"
+          value={frequency}
+          options={FREQUENCIES.map(f => ({
+            id: f,
+            label: f,
+            value: f
+          }))}
+          showPicker={showFrequencyPicker}
+          onPress={() => setShowFrequencyPicker(true)}
+          onSelect={(option) => {
+            setFrequency(option.value as RepaymentFrequency);
+            setShowFrequencyPicker(false);
+          }}
+        />
 
         <TextInput
           style={[styles.input, styles.notesInput]}

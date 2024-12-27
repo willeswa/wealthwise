@@ -9,8 +9,8 @@ export const addDebt = async (debt: DebtInput): Promise<number> => {
     const result = await db.runAsync(
       `INSERT INTO debts (
         creditor, total_amount, remaining_amount, interest_rate, 
-        currency, start_date, expected_end_date, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        currency, start_date, expected_end_date, frequency, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         debt.creditor,
         debt.total_amount,
@@ -19,6 +19,7 @@ export const addDebt = async (debt: DebtInput): Promise<number> => {
         debt.currency,
         debt.start_date,
         debt.expected_end_date,
+        debt.frequency,
         debt.notes ?? null
       ]
     );
