@@ -25,10 +25,13 @@ const CATEGORIES: CategoryType[] = [
   { id: '1', name: 'Food', icon: 'food' },
   { id: '2', name: 'Transport', icon: 'car' },
   { id: '3', name: 'Shopping', icon: 'shopping' },
-  { id: '4', name: 'Bills', icon: 'receipt' },
   { id: '5', name: 'Entertainment', icon: 'movie' },
   { id: '6', name: 'Healthcare', icon: 'hospital' },
   { id: '7', name: 'Education', icon: 'school' },
+  { id: '8', name: 'Rent', icon: 'home' },
+  { id: '9', name: 'Utilities', icon: 'water' },
+  { id: '10', name: 'Insurance', icon: 'shield' },
+  { id: '11', name: 'Other', icon: 'dots-horizontal' },
 ];
 
 const PADDING_HORIZONTAL = 16;
@@ -39,6 +42,7 @@ export const AddExpenseScreen = () => {
   const { closeModal } = useModalStore();
   const [amount, setAmount] = useState("0.00");
   const [comment, setComment] = useState("");
+  const [name, setName] = useState("");
   const [currency, setCurrency] = useState<CurrencyType>(() => {
     // Initialize with default currency or fallback to USD
     return CURRENCIES.find(c => c.code === defaultCurrency) || CURRENCIES[0];
@@ -83,7 +87,13 @@ export const AddExpenseScreen = () => {
         return;
       }
 
+      if (!name.trim()) {
+        alert('Please enter a name for the expense');
+        return;
+      }
+
       const expenseData = {
+        name: name.trim(),
         amount: numericAmount,
         currency: currency.code,
         category: selectedCategory.name,
@@ -94,6 +104,7 @@ export const AddExpenseScreen = () => {
       await addNewExpense(expenseData);
       
       // Reset form
+      setName("");
       setAmount("0.00");
       setComment("");
       setSelectedCategory(CATEGORIES[0]);
@@ -156,6 +167,14 @@ export const AddExpenseScreen = () => {
           currencySymbol={currency.symbol}
         />
         
+        <TextInput
+          style={styles.nameInput}
+          placeholder="Expense name"
+          value={name}
+          onChangeText={setName}
+          maxLength={50}
+        />
+
         <Dropdown
           label="Category"
           value={selectedCategory.name}
@@ -232,6 +251,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 16,
     color: "#929ABE",
+  },
+  nameInput: {
+    fontSize: 16,
+    color: "#8A8A8A",
+    borderBottomWidth: 1,
+    borderColor: "#EAEAEA",
+    marginBottom: 16,
+    paddingHorizontal: 8,
+    height: 40,
   },
   commentInput: {
     fontSize: 16,

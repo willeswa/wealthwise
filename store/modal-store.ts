@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-type ModalAction = 'add-income' | 'add-expense' | 'add-debt' | 'add-investment' | null;
+type ModalAction = 'add-income' | 'add-expense' | 'add-expense-manual' | 'scan-receipt' | 'bulk-expense' | 'add-debt' | 'add-investment' | null;
 
 interface ModalStore {
   isModalVisible: boolean;

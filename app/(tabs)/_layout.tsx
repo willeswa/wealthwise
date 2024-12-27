@@ -6,6 +6,7 @@ import { TabList, Tabs, TabSlot, TabTrigger } from "expo-router/ui";
 import React from "react";
 
 export default function Layout() {
+  console.log("Layout");
   return (
     <>
       <Tabs style={{ flex: 1, backgroundColor: "white" }}>

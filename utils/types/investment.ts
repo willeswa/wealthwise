@@ -5,13 +5,14 @@ export type Liquidity = 'Liquid' | 'Illiquid';
 export interface InvestmentType {
   id: number;
   name: string;
-  description: string;
+  description?: string;
   risk_level: RiskLevel;
   liquidity: Liquidity;
+  created_at?: string;
 }
 
 export interface Investment {
-  id?: number;
+  id: number;
   name: string;
   type: string;
   current_value: number;
@@ -20,6 +21,7 @@ export interface Investment {
   notes?: string;
   created_at?: string;
   updated_at?: string;
+  investment_type?: InvestmentType;
 }
 
 export interface Contribution {

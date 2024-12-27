@@ -5,8 +5,8 @@ export const addExpense = async (expense: ExpenseInput): Promise<number> => {
   try {
     const db = getDatabase();
     const result = await db.runAsync(
-      'INSERT INTO expenses (amount, currency, category, comment, date) VALUES (?, ?, ?, ?, ?)',
-      [expense.amount, expense.currency, expense.category, expense.comment || null, expense.date]
+      'INSERT INTO expenses (name, amount, currency, category, comment, date) VALUES (?, ?, ?, ?, ?, ?)',
+      [expense.name, expense.amount, expense.currency, expense.category, expense.comment || null, expense.date]
     );
     return result.lastInsertRowId;
   } catch (error) {

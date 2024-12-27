@@ -18,7 +18,7 @@ const OPTIONS = [
     title: "Income",
     subtitle: "Salary, freelance, etc.",
     icon: "wallet",
-    route: "add-income",
+    action: "add-income", // Changed from route to action
     color: "#00C853",
   },
   {
@@ -26,26 +26,26 @@ const OPTIONS = [
     title: "Expense",
     subtitle: "Track spending",
     icon: "card",
-    route: "add-expense",
+    action: "add-expense", // Changed from route to action
     color: "#FF385C",
     subOptions: [
       {
         id: 'quick',
         title: "Quick Entry",
         icon: "flash",
-        route: "add-expense-manual",
+        action: "add-expense", // Changed from route to action
       },
       {
         id: 'scan',
         title: "Scan Receipt",
         icon: "scan",
-        route: "scan-receipt",
+        action: "scan-receipt", // Changed from route to action
       },
       {
         id: 'bulk',
         title: "Bulk Entry",
         icon: "list",
-        route: "bulk-expense",
+        action: "bulk-expense", // Changed from route to action
       },
     ],
   },
@@ -54,7 +54,7 @@ const OPTIONS = [
     title: "Debt",
     subtitle: "Loans & payments",
     icon: "trending-down",
-    route: "add-debt",
+    action: "add-debt", // Changed from route to action
     color: "#FF9500",
   },
   {
@@ -62,7 +62,7 @@ const OPTIONS = [
     title: "Investment",
     subtitle: "Grow wealth",
     icon: "trending-up",
-    route: "add-investment",
+    action: "add-investment", // Changed from route to action
     color: "#007AFF",
   },
 ];
@@ -112,13 +112,13 @@ export function AddOptionsMenu() {
       }),
     ]).start(() => {
       hideOptionsMenu();
-      openModal(option.route as any);
+      openModal(option.action as any);
     });
   };
 
-  const handleSubOptionPress = (route: string) => {
+  const handleSubOptionPress = (action: string) => {
     hideOptionsMenu();
-    openModal(route as any);
+    openModal(action as any);
   };
 
   if (!isOptionsMenuVisible) return null;
@@ -186,7 +186,7 @@ export function AddOptionsMenu() {
                       <Pressable
                         key={subOption.id}
                         style={styles.subOption}
-                        onPress={() => handleSubOptionPress(subOption.route)}
+                        onPress={() => handleSubOptionPress(subOption.action)}
                       >
                         <Ionicons name={subOption.icon as any} size={18} color={option.color} />
                         <Text style={styles.subOptionText}>{subOption.title}</Text>

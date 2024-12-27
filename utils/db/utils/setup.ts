@@ -22,6 +22,7 @@ export const initDatabase = async () => {
 
       CREATE TABLE IF NOT EXISTS expenses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
         amount DECIMAL(10,2) NOT NULL,
         currency TEXT NOT NULL,
         category TEXT NOT NULL,

@@ -8,6 +8,8 @@ import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 export function ActionModal() {
   const { isModalVisible, currentAction, closeModal } = useModalStore();
 
+  console.log(currentAction, isModalVisible);
+
   return (
     <Modal
       animationType="slide"

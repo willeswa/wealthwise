@@ -1,4 +1,4 @@
-import { Investment, InvestmentInput, InvestmentType, Contribution, ContributionInput } from '../types/investment';
+import { Investment, InvestmentInput, InvestmentType, Contribution, ContributionInput, RiskLevel, Liquidity } from '../types/investment';
 import { getDatabase } from './utils/setup';
 
 export const addInvestment = async (investment: InvestmentInput): Promise<number> => {
@@ -62,28 +62,26 @@ export const getContributions = async (investmentId: number): Promise<Contributi
 export const getInvestments = async (): Promise<Investment[]> => {
   try {
     const db = getDatabase();
-    const investments = await db.getAllAsync<Investment & { type_name?: string; type_description?: string }>(
+    const investments = await db.getAllAsync<Investment>(
       `SELECT 
         i.*,
         it.name as type_name,
         it.description as type_description,
-        it.risk_category as type_risk_category,
-        it.country_code as type_country_code
+        it.risk_level as type_risk_level,
+        it.liquidity as type_liquidity
       FROM investments i
-      LEFT JOIN investment_types it ON i.id = it.id
+      LEFT JOIN investments_types it ON i.type = it.name
       ORDER BY i.created_at DESC`
     );
 
-    // Transform the results to include the investment_type object
     return investments.map(inv => ({
       ...inv,
-      investment_type: inv.type_name ? {
-        id: inv.investment_type_id,
-        name: inv.type_name,
-        description: inv.type_description,
-        risk_category: "Low",
-        country_code: "KE",
-        is_active: true
+      investment_type: inv.name ? {
+        id: inv.id,
+        name: inv.name,
+        description: inv.name,
+        risk_level: inv.risk_level as RiskLevel,
+        liquidity: inv.liquidity as Liquidity
       } : undefined
     }));
   } catch (error) {
@@ -95,15 +93,15 @@ export const getInvestments = async (): Promise<Investment[]> => {
 export const getInvestmentById = async (id: number): Promise<Investment | null> => {
   try {
     const db = getDatabase();
-    const investment = await db.getFirstAsync<Investment & { type_name?: string; type_description?: string }>(
+    const investment = await db.getFirstAsync<Investment>(
       `SELECT 
         i.*,
         it.name as type_name,
         it.description as type_description,
-        it.risk_category as type_risk_category,
-        it.country_code as type_country_code
+        it.risk_level as type_risk_level,
+        it.liquidity as type_liquidity
       FROM investments i
-      LEFT JOIN investment_types it ON i.id = it.id
+      LEFT JOIN investments_types it ON i.type = it.name
       WHERE i.id = ?`,
       [id]
     );
@@ -112,13 +110,12 @@ export const getInvestmentById = async (id: number): Promise<Investment | null> 
 
     return {
       ...investment,
-      investment_type: investment.type_name ? {
-        id: investment.investment_type_id,
-        name: investment.type_name,
-        description: investment.type_description,
-        risk_category: "Low",
-        country_code: "KE",
-        is_active: true
+      investment_type: investment.name ? {
+        id: investment.id,
+        name: investment.name,
+        description: investment.name,
+        risk_level: investment.risk_level as RiskLevel,
+        liquidity: investment.liquidity as Liquidity
       } : undefined
     };
   } catch (error) {
@@ -147,7 +144,12 @@ export const updateInvestment = async (id: number, investment: Partial<Investmen
     if (entries.length === 0) return;
 
     const updates = entries.map(([key]) => `${key} = ?`).join(', ');
-    const values = entries.map(([_, value]) => value ?? null);
+    const values = entries.map(([_, value]) => {
+      if (typeof value === 'object' && value !== null) {
+        return JSON.stringify(value);
+      }
+      return value ?? null;
+    });
 
     await db.runAsync(
       `UPDATE investments 
