@@ -77,7 +77,6 @@ export const Dropdown: React.FC<DropdownProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
-    marginBottom: 24,
   },
   selector: {
     flexDirection: 'row',

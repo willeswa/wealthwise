@@ -22,9 +22,9 @@ interface NumpadProps {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Calculate dimensions
-const PADDING_HORIZONTAL = 16;
+const PADDING_HORIZONTAL = 12;
 const TOTAL_PADDING = PADDING_HORIZONTAL * 6;
-const COLUMN_GAP = 8;
+const COLUMN_GAP = 16;
 const TOTAL_GAPS = 3;
 const AVAILABLE_WIDTH = SCREEN_WIDTH - TOTAL_PADDING - (COLUMN_GAP * TOTAL_GAPS);
 const BUTTON_SIZE = Math.floor(AVAILABLE_WIDTH / 4);
@@ -123,7 +123,6 @@ const styles = StyleSheet.create({
     width: TOTAL_WIDTH,
     flexDirection: "row",
     gap: COLUMN_GAP,
-    marginBottom: 16,
     alignSelf: 'center',
   },
   numberGrid: {

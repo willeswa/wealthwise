@@ -1,30 +1,42 @@
+export type RepaymentFrequency = 'One-time' | 'Weekly' | 'Monthly' | 'Yearly';
+
 export interface Debt {
   id?: number;
   creditor: string;
-  amount?: number | null;  // Make amount optional
+  total_amount: number;
+  remaining_amount: number;
   interest_rate: number;
   currency: string;
-  startDate: string;
-  dueDate: string;
-  frequency: 'one-time' | 'weekly' | 'monthly' | 'yearly';
-  payment_amount: number;
+  start_date: string;
+  expected_end_date: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface DebtRepayment {
+  id?: number;
+  debt_id: number;
+  amount: number;
+  repayment_date: string;
+  frequency: RepaymentFrequency;
   notes?: string;
   created_at?: string;
 }
 
-export interface DebtInput extends Omit<Debt, 'id' | 'created_at'> {}
+export type DebtInput = Omit<Debt, 'id' | 'created_at' | 'updated_at' | 'remaining_amount'>;
+export type DebtRepaymentInput = Omit<DebtRepayment, 'id' | 'created_at'>;
 
 export interface DebtSummary {
   totalOutstanding: number;
   activeDebts: number;
   highestInterestDebt: Debt | null;
-  upcomingPayment: {
+  upcomingRepayment: {
     debt: Debt;
-    dueDate: string;
-    amount: number;
+    repayment: DebtRepayment;
   } | null;
   debtToIncomeRatio: number;
-  monthlyPaymentTotal: number;
+  monthlyRepaymentTotal: number;
   debts: Debt[];
   chartData: {
     barData: Array<{

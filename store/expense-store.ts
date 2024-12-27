@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { addExpense, deleteExpense, getExpenses } from '../utils/db/expense';
+import { addExpense, deleteExpense, getExpenses, getExpenseCategories } from '../utils/db/expense';
 import { getDefaultCurrency, setDefaultCurrency } from '../utils/db/utils/settings';
-import { Expense, ExpenseInput } from '../utils/types/expense';
+import { Expense, ExpenseInput, ExpenseCategory } from '../utils/types/expense';
 import { useBudgetStore } from './budget-store';
 
 interface ExpenseStore {
@@ -10,10 +10,12 @@ interface ExpenseStore {
   error: string | null;
   initialized: boolean;
   defaultCurrency: string;
+  categories: ExpenseCategory[];
   fetchExpenses: () => Promise<void>;
   addNewExpense: (expense: ExpenseInput) => Promise<void>;
   removeExpense: (id: number) => Promise<void>;
   setDefaultCurrency: (currency: string) => Promise<void>;
+  fetchCategories: () => Promise<void>;
 }
 
 export const useExpenseStore = create<ExpenseStore>((set) => ({
@@ -22,15 +24,22 @@ export const useExpenseStore = create<ExpenseStore>((set) => ({
   error: null,
   initialized: false,
   defaultCurrency: 'USD',
+  categories: [],
 
   fetchExpenses: async () => {
     try {
       set({ loading: true, error: null });
-      const [data, currency] = await Promise.all([
+      const [data, currency, categories] = await Promise.all([
         getExpenses(),
-        getDefaultCurrency()
+        getDefaultCurrency(),
+        getExpenseCategories()
       ]);
-      set({ expenses: data, defaultCurrency: currency, initialized: true });
+      set({ 
+        expenses: data, 
+        defaultCurrency: currency, 
+        categories: categories,
+        initialized: true 
+      });
     } catch (error) {
       set({ error: 'Failed to fetch expenses', initialized: false });
       console.error('Error fetching expenses:', error);
@@ -76,6 +85,15 @@ export const useExpenseStore = create<ExpenseStore>((set) => ({
     } catch (error) {
       console.error('Error setting default currency:', error);
       throw error;
+    }
+  },
+
+  fetchCategories: async () => {
+    try {
+      const categories = await getExpenseCategories();
+      set({ categories });
+    } catch (error) {
+      console.error('Error fetching categories:', error);
     }
   },
 }));

@@ -36,7 +36,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   };
 
   const content = (
-    <View style={styles.amountContainer}>
+    <View>
       {label && <Text style={styles.label}>{label}</Text>}
       <View style={styles.inputContainer}>
         <View style={styles.currencyContainer}>
@@ -75,9 +75,6 @@ export const AmountInput: React.FC<AmountInputProps> = ({
 };
 
 const styles = StyleSheet.create({
-  amountContainer: {
-    marginBottom: 16,
-  },
   label: {
     fontSize: 14,
     color: '#666',
