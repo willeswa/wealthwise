@@ -1,93 +1,87 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Pressable, Text, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { FinancialGoal } from '../utils/types/preferences';
-import { Button } from './Button';
+import React, { useState, useMemo } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FinancialGoal, GOALS } from '../utils/types/preferences';
 
 interface GoalSelectorProps {
   onSelect: (goal: FinancialGoal) => void;
-  value: FinancialGoal | null; // Add value prop
+  value: FinancialGoal | null;
+  customGoals?: FinancialGoal[] | null;
+  isLoading?: boolean;
 }
 
-const GOALS: { value: FinancialGoal; label: string; description: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
-  {
-    value: 'DEBT_FREE',
-    label: 'Become Debt Free',
-    description: 'Focus on clearing all your debts',
-    icon: 'cash-remove'
-  },
-  {
-    value: 'SAVE_EMERGENCY',
-    label: 'Build Emergency Fund',
-    description: '3-6 months of expenses saved',
-    icon: 'umbrella'
-  },
-  {
-    value: 'INVEST_FUTURE',
-    label: 'Start Investing',
-    description: 'Grow wealth through investments',
-    icon: 'trending-up'
-  },
-  {
-    value: 'BUILD_WEALTH',
-    label: 'Build Long-term Wealth',
-    description: 'Focus on assets and passive income',
-    icon: 'bank'
-  },
- 
-];
-
-export const GoalSelector = ({ onSelect, value }: GoalSelectorProps) => {
-  const [selected, setSelected] = useState<FinancialGoal | null>(value); // Initialize with value
+export const GoalSelector = ({ 
+  onSelect, 
+  value, 
+  customGoals, 
+  isLoading 
+}: GoalSelectorProps) => {
+  const [selected, setSelected] = useState<FinancialGoal | null>(value);
 
   const handleGoalSelect = (goal: FinancialGoal) => {
     setSelected(goal);
     onSelect(goal); // Call onSelect immediately when goal is selected
   };
 
+  // Determine which goals to show
+  const goalsToShow = useMemo(() => {
+    if (customGoals && customGoals.length > 0) {
+      return customGoals;
+    }
+    return GOALS;
+  }, [customGoals]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.helpText}>
         Select the goal that best matches your primary financial objective
       </Text>
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.goalsContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {GOALS.map((goal) => (
-          <Pressable
-            key={goal.value}
-            style={[
-              styles.goal,
-              selected === goal.value && styles.goalSelected
-            ]}
-            onPress={() => handleGoalSelect(goal.value)}
-          >
-            <View style={styles.iconContainer}>
-              <MaterialCommunityIcons 
-                name={goal.icon} 
-                size={18} 
-                color={selected === goal.value ? '#fff' : '#232D59'} 
-              />
-            </View>
-            <View style={styles.textContainer}>
-              <Text style={[
-                styles.label,
-                selected === goal.value && styles.labelSelected
-              ]}>
-                {goal.label}
-              </Text>
-              <Text style={[
-                styles.description,
-                selected === goal.value && styles.descriptionSelected
-              ]}>
-                {goal.description}
-              </Text>
-            </View>
-          </Pressable>
-        ))}
-      </ScrollView>
+      
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#232D59" />
+          <Text style={styles.loadingText}>Customizing goals for your region...</Text>
+        </View>
+      ) : (
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.goalsContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {goalsToShow.map((goal) => (
+            <Pressable
+              key={goal.value}
+              style={[
+                styles.goal,
+                selected === goal && styles.goalSelected
+              ]}
+              onPress={() => handleGoalSelect(goal)}
+            >
+              <View style={styles.iconContainer}>
+                <MaterialCommunityIcons 
+                  name={goal.icon} 
+                  size={18} 
+                  color={selected === goal ? '#fff' : '#232D59'} 
+                />
+              </View>
+              <View style={styles.textContainer}>
+                <Text style={[
+                  styles.label,
+                  selected?.value === goal.value && styles.labelSelected
+                ]}>
+                  {goal.label}
+                </Text>
+                <Text style={[
+                  styles.description,
+                  selected?.value === goal.value && styles.descriptionSelected
+                ]}>
+                  {goal.description}
+                </Text>
+              </View>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -114,25 +108,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 12, // Increased vertical padding
+    paddingHorizontal: 16, // Increased horizontal padding
     borderRadius: 16,
-    gap: 20,
+    gap: 4, // Increased gap between icon and text
+    marginHorizontal: 4, // Add slight margin for better edge spacing
   },
   goalSelected: {
     backgroundColor: '#232D59',
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44, // Slightly larger icon container
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
   textContainer: {
     flex: 1,
-    gap: 4,
+    gap: 6, // Increased gap between label and description
+    paddingRight: 8, // Add some padding on the right for text
   },
   label: {
     fontSize: 16,
@@ -157,5 +153,16 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 24,
     marginBottom: 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
 });

@@ -19,6 +19,7 @@ import { ProgressDots } from '../components/ProgressDots';
 import { usePreferencesStore } from '../store/preferences-store';
 import { getCountryInfo, getCountryOptions, getUserCountry } from '../utils/constants/countries';
 import { getQuoteForStep } from '../utils/constants/quotes';
+import { AIService } from '@/utils/ai/service';
 
 export const ONBOARDING_STEPS = [
   {
@@ -47,6 +48,16 @@ export const ONBOARDING_STEPS = [
   }
 ];
 
+// Add new state interface
+interface OnboardingState {
+  isLoadingAI: boolean;
+  aiGoals: FinancialGoal[] | null;
+  country: string;
+  currency: string;
+  primaryGoal: FinancialGoal | null;
+  aiEnabled: boolean | null;
+}
+
 export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
@@ -58,11 +69,13 @@ export default function Onboarding() {
   const defaultCountry = useMemo(() => getUserCountry(), []);
   
   // Initialize stepData with default country
-  const [stepData, setStepData] = useState({
+  const [stepData, setStepData] = useState<OnboardingState>({
+    isLoadingAI: false,
+    aiGoals: null,
     country: defaultCountry.code,
     currency: defaultCountry.currency,
-    primaryGoal: null as FinancialGoal | null,
-    aiEnabled: null as boolean | null
+    primaryGoal: null,
+    aiEnabled: null
   });
 
   // Keep track of completed steps
@@ -168,9 +181,36 @@ export default function Onboarding() {
     router.replace('/(tabs)');
   };
 
+  // Add function to fetch AI goals
+  const fetchAIGoals = async (countryCode: string) => {
+    try {
+      setStepData(prev => ({ ...prev, isLoadingAI: true }));
+      const response = await AIService.getCountrySpecificGoals(countryCode);
+      console.log('AI Goals:', response);
+      setStepData(prev => ({ 
+        ...prev, 
+        aiGoals: response.goals,
+        isLoadingAI: false 
+      }));
+      return true;
+    } catch (error) {
+      console.error('Failed to fetch AI goals:', error);
+      setStepData(prev => ({ ...prev, isLoadingAI: false }));
+      return false;
+    }
+  };
 
-
-  const handleNextStep = () => {
+  // Modify handleNextStep to handle AI goals fetching
+  const handleNextStep = async () => {
+    if (step === 0) {
+      // If moving from country selection to goals
+      const success = await fetchAIGoals(stepData.country);
+      if (!success) {
+        // Continue anyway, will use default goals
+        console.log('Using default goals due to AI failure');
+      }
+    }
+    
     setCompletedSteps(prev => ({
       ...prev,
       [ONBOARDING_STEPS[step].id]: true
@@ -234,6 +274,8 @@ export default function Onboarding() {
                       goals: true
                     }));
                   }}
+                  customGoals={stepData.aiGoals}
+                  isLoading={stepData.isLoadingAI}
                 />
               )}
 
@@ -341,7 +383,7 @@ const styles = StyleSheet.create({
   stepContainer: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingHorizontal: 28,
+    paddingHorizontal: 16,
   },
   topSection: {
     flex: 1,
@@ -372,7 +414,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     borderRadius: 24,
-    padding: 24,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -384,7 +426,7 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   bottomSection: {
-    paddingVertical: 40,
+    paddingVertical: 16,
     alignItems: 'center',
     gap: 32,
   },
