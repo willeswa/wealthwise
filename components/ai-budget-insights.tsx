@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useState, useRef } from "react";
+import { StyleSheet, Text, TouchableOpacity, View, Animated, Easing } from "react-native";
 import { Card } from "./card";
 import { colors } from "../utils/colors";
 import { useBudgetStore } from "@/store/budget-store";
@@ -37,16 +37,58 @@ interface Props {
 export const AIBudgetInsights = ({ onOptimize }: Props) => {
   const { aiInsights, fetchLatestInsights } = useBudgetStore();
   const [checking, setChecking] = useState(false);
+  
+  // Updated animation values
+  const slideAnim = useRef(new Animated.Value(-15)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.97)).current;
 
   useEffect(() => {
     checkAndUpdateInsights();
   }, []);
 
+  // Enhanced animation sequence
+  useEffect(() => {
+    if (aiInsights.length > 0) {
+      // Configure smoother animation timing
+      const timing = {
+        duration: 300,
+        useNativeDriver: true,
+        easing: Easing.bezier(0.4, 0.0, 0.2, 1),
+      };
+
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          damping: 15,
+          mass: 0.6,
+          stiffness: 150,
+          restDisplacementThreshold: 0.001,
+          restSpeedThreshold: 0.001,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.cubic),
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          damping: 12,
+          mass: 0.6,
+          stiffness: 150,
+        }),
+      ]).start();
+    }
+  }, [aiInsights]);
+
   const checkAndUpdateInsights = async () => {
     try {
       setChecking(true);
       const eligibility = await checkAIInsightsEligibility();
-      
+      console.log(eligibility)
       if (eligibility.eligible) {
         await executeAIAnalysis();
       }
@@ -73,39 +115,61 @@ export const AIBudgetInsights = ({ onOptimize }: Props) => {
   }
 
   return (
-    <Card style={styles.container}>
-      <LinearGradient
-        colors={['rgba(37, 99, 235, 0.08)', 'rgba(37, 99, 235, 0)']}
-        style={styles.headerGradient}
-      >
-        <View style={styles.header}>
-          <View style={styles.titleContainer}>
-            <Ionicons name="sparkles" size={24} color={FINANCE_COLORS.accent} />
-            <Text style={styles.title}>AI Insights</Text>
+    <Animated.View style={[
+      styles.container,
+      {
+        transform: [
+          { translateY: slideAnim },
+          { scale: scaleAnim },
+          {
+            rotate: slideAnim.interpolate({
+              inputRange: [-15, 0],
+              outputRange: ['0.3deg', '0deg'],
+              extrapolate: 'clamp'
+            })
+          }
+        ],
+        opacity: opacityAnim,
+        shadowOpacity: opacityAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, 0.1]
+        })
+      }
+    ]}>
+      <Card style={styles.innerContainer}>
+        <LinearGradient
+          colors={['rgba(37, 99, 235, 0.08)', 'rgba(37, 99, 235, 0)']}
+          style={styles.headerGradient}
+        >
+          <View style={styles.header}>
+            <View style={styles.titleContainer}>
+              <Ionicons name="sparkles" size={24} color={FINANCE_COLORS.accent} />
+              <Text style={styles.title}>AI Insights</Text>
+            </View>
+            <Text style={styles.subtitle}>Personalized financial recommendations</Text>
           </View>
-          <Text style={styles.subtitle}>Personalized financial recommendations</Text>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
 
-      <View style={styles.insightsList}>
-        {formattedInsights.map((insight, index) => (
-          <View 
-            key={index} 
-            style={[
-              styles.insightItem,
-              { borderLeftColor: insight.iconColor }
-            ]}
-          >
-            <Text numberOfLines={1} style={styles.insightTitle}>
-              {insight.title}
-            </Text>
-            <Text style={styles.insightText}>
-              {insight.message}
-            </Text>
-          </View>
-        ))}
-      </View>
-    </Card>
+        <View style={styles.insightsList}>
+          {formattedInsights.map((insight, index) => (
+            <View 
+              key={index} 
+              style={[
+                styles.insightItem,
+                { borderLeftColor: insight.iconColor }
+              ]}
+            >
+              <Text numberOfLines={1} style={styles.insightTitle}>
+                {insight.title}
+              </Text>
+              <Text style={styles.insightText}>
+                {insight.message}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </Card>
+    </Animated.View>
   );
 };
 
@@ -133,6 +197,13 @@ function getBackgroundForImpact(score: number) {
 
 const styles = StyleSheet.create({
   container: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 3,
+    margin: 2, // Add slight margin to prevent shadow clipping
+  },
+  innerContainer: {
     overflow: 'hidden',
     borderRadius: 16,
   },
@@ -140,6 +211,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginHorizontal: -16,
     marginTop: -16,
+    borderRadius: 10,
   },
   header: {
     gap: 4,

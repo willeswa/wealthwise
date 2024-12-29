@@ -22,10 +22,28 @@ export interface AIPrompt {
 }
 
 export class PromptBuilder {
-  static goals(countryCode: string): AIPrompt {
+  static goals(
+    countryCode: string,
+    householdProfile?: {
+      composition: 'single' | 'couple' | 'family';
+      size: number;
+      primaryAge: number;
+      hasChildren: boolean;
+    }
+  ): AIPrompt {
+    let prompt = GOALS_TEMPLATE.replaceAll('{country}', countryCode);
+    
+    if (householdProfile) {
+      prompt = prompt
+        .replace('{household.composition}', householdProfile.composition)
+        .replace('{household.size}', householdProfile.size.toString())
+        .replace('{household.primaryAge}', householdProfile.primaryAge.toString())
+        .replace('{household.hasChildren}', householdProfile.hasChildren.toString());
+    }
+    
     return {
       type: 'goals',
-      prompt: GOALS_TEMPLATE.replaceAll('{country}', countryCode)
+      prompt
     };
   }
 

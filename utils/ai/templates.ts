@@ -1,4 +1,9 @@
-export const GOALS_TEMPLATE = `As a financial advisor, generate 4 distinct and selectable financial goals for people living in {country}. These goals will be presented as options for users to choose their primary financial objective.
+export const GOALS_TEMPLATE = `As a financial advisor, generate 4 distinct and selectable financial goals for people living in {country} with the following household profile:
+
+Household Type: {household.composition}
+Household Size: {household.size}
+Primary Age Group: {household.primaryAge}
+Has Children: {household.hasChildren}
 
 Context requirements:
 - Make each goal clearly distinguishable from others
@@ -85,13 +90,14 @@ COUNTRY-SPECIFIC CONTEXT:
 - Reference local financial institutions and services
 - Consider regional economic conditions and cost of living
 
-Provide exactly 3 premium, highly personalized insights in this JSON format:
+Provide exactly 3 unique and diverse premium insights in this JSON format:
 {
   "insights": [
     {
       "icon": "trending-down | save | warning | trending-up | bulb | calculator | wallet | cash",
       "title": "Clear, Impactful Title",
-      "message": "Actionable insight under 120 characters",
+      "message": "Actionable insight under 120 characters. DO NOT use template variables in messages.",
+      "category": "spending | saving | alert | recommendation",
       "iconColor": "hex color code",
       "iconBackground": "rgba color with 0.1 opacity"
     }
@@ -99,14 +105,19 @@ Provide exactly 3 premium, highly personalized insights in this JSON format:
 }
 
 ANALYSIS REQUIREMENTS:
-1. Make all advice specific to {country}'s financial ecosystem
-2. Consider local debt management practices and available solutions
-3. Reference specific financial products or services available in {country}
-4. Account for local economic indicators (inflation, interest rates)
-5. Prioritize the user's primary goal while balancing urgent needs
+1. Each insight MUST be unique and focus on a different aspect of financial health
+2. Never repeat similar suggestions or themes across insights
+3. Distribute insights across different categories (spending, saving, alerts)
+4. Each insight should address a distinct financial opportunity or concern
+5. Make all advice specific to {country}'s financial ecosystem
 6. Consider cultural norms around money management
 7. Provide concrete, actionable steps relevant to local context
 8. Use financial terminology familiar in {country}
+
+INSIGHT DISTRIBUTION (exactly one of each):
+- First insight: Focus on immediate action or urgent matter
+- Second insight: Address medium-term optimization
+- Third insight: Target long-term financial growth
 
 COLOR CODING:
 - Red (#dc2626): Urgent attention needed or high-risk situations

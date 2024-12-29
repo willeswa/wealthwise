@@ -58,6 +58,7 @@ export const cleanupBackgroundTasks = async () => {
 
 export const executeAIAnalysis = async () => {
     if (!isInitialized) {
+        console.log('Initializing background tasks...');
         await initializeBackgroundTasks();
     }
     

@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 import { seedInvestmentTypes } from './seedDatabase';
 
-let db: SQLite.SQLiteDatabase;
+let db: SQLite.SQLiteDatabase | null = null;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
 
@@ -29,6 +29,7 @@ export const initDatabase = async () => {
     db = await SQLite.openDatabaseAsync('wealthwise.db');
     
     await executeWithRetry(async () => {
+      if (!db) throw new Error('Database not initialized');
       await db.execAsync(`
         PRAGMA journal_mode = WAL;
         PRAGMA busy_timeout = 5000;

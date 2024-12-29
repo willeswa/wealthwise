@@ -18,6 +18,7 @@ import { colors } from "../../utils/colors";
 
 const BudgetInsights = () => {
   const { insights, fetchInsights, loading } = useBudgetStore();
+  console.log({insights});
 
   useEffect(() => {
     fetchInsights();

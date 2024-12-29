@@ -20,6 +20,7 @@ import { usePreferencesStore } from '../store/preferences-store';
 import { getCountryInfo, getCountryOptions, getUserCountry } from '../utils/constants/countries';
 import { getQuoteForStep } from '../utils/constants/quotes';
 import { AIService } from '@/utils/ai/service';
+import { HouseholdSelector } from '../components/HouseholdSelector';
 
 export const ONBOARDING_STEPS = [
   {
@@ -29,6 +30,14 @@ export const ONBOARDING_STEPS = [
     icon: 'globe-outline',
     color: '#E8F5E9',
     validation: (data: any) => !!data.country
+  },
+  {
+    id: 'household',
+    title: 'Your Household Profile',
+    subtitle: "Help us personalize your financial journey",
+    icon: 'account-group',
+    color: '#E1F5FE',
+    validation: (data: any) => !!data.householdProfile
   },
   {
     id: 'goals',
@@ -56,6 +65,12 @@ interface OnboardingState {
   currency: string;
   primaryGoal: FinancialGoal | null;
   aiEnabled: boolean | null;
+  householdProfile: {
+    composition: 'single' | 'couple' | 'family';
+    size: number;
+    primaryAge: number;
+    hasChildren: boolean;
+  } | null;
 }
 
 export default function Onboarding() {
@@ -75,7 +90,8 @@ export default function Onboarding() {
     country: defaultCountry.code,
     currency: defaultCountry.currency,
     primaryGoal: null,
-    aiEnabled: null
+    aiEnabled: null,
+    householdProfile: null
   });
 
   // Add loading state
@@ -184,11 +200,11 @@ export default function Onboarding() {
     router.replace('/(tabs)');
   };
 
-  // Add function to fetch AI goals
-  const fetchAIGoals = async (countryCode: string) => {
+  // Modify fetchAIGoals to include household profile
+  const fetchAIGoals = async (countryCode: string, householdProfile: OnboardingState['householdProfile']) => {
     try {
       setStepData(prev => ({ ...prev, isLoadingAI: true }));
-      const response = await AIService.getCountrySpecificGoals(countryCode);
+      const response = await AIService.getCountrySpecificGoals(countryCode, householdProfile || undefined);
       setStepData(prev => ({ 
         ...prev, 
         aiGoals: response.goals,
@@ -202,11 +218,11 @@ export default function Onboarding() {
     }
   };
 
-  // Modify handleNextStep to handle AI goals fetching
+  // Modify handleNextStep to fetch AI goals after household step
   const handleNextStep = async () => {
-    if (step === 0) {
+    if (step === 1 && stepData.householdProfile) {
       setIsLoading(true);
-      const success = await fetchAIGoals(stepData.country);
+      const success = await fetchAIGoals(stepData.country, stepData.householdProfile);
       setIsLoading(false);
       if (!success) {
         // Continue anyway, will use default goals
@@ -264,6 +280,22 @@ export default function Onboarding() {
               )}
 
               {step === 1 && (
+                <HouseholdSelector
+                  value={stepData.householdProfile}
+                  onSelect={(profile) => {
+                    setStepData(prev => ({
+                      ...prev,
+                      householdProfile: profile
+                    }));
+                    setCompletedSteps(prev => ({
+                      ...prev,
+                      household: true
+                    }));
+                  }}
+                />
+              )}
+
+              {step === 2 && (
                 <GoalSelector
                   value={stepData.primaryGoal} // Pass current value
                   onSelect={(goal) => {
@@ -281,7 +313,7 @@ export default function Onboarding() {
                 />
               )}
 
-              {step === 2 && (
+              {step === 3 && (
                 <AiPreferencesSelector
                   value={stepData.aiEnabled} // Pass current value
                   onSelect={(enabled) => {
@@ -307,9 +339,9 @@ export default function Onboarding() {
             completed={completedSteps}
           />
           <Button
-            title={step === 2 ? "Get Started" : "Continue"}
+            title={step === 3 ? "Get Started" : "Continue"}
             onPress={() => {
-              if (step === 2) {
+              if (step === 3) {
                 setPreferences({
                   ...stepData,
                   primaryGoal: stepData.primaryGoal || undefined,

@@ -1,7 +1,7 @@
+import { addDays, differenceInDays, format, isAfter, subMonths } from "date-fns";
 import { getDatabase } from "../db/utils/setup";
-import { format, isAfter, startOfMonth, addDays, endOfMonth, subMonths, differenceInDays } from "date-fns";
 
-const CHECK_EXPIRY = false; // Toggle for debugging
+const CHECK_EXPIRY = true; // Toggle for debugging
 
 interface EligibilityResult {
   eligible: boolean;

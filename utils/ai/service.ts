@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIGoalsResponse, BudgetAnalysisResponse, PromptBuilder } from './prompt';
 
-const AI_KEY = process.env.GEMINI_API_KEY;
+const AI_KEY = "";
 
 console.log('AI_KEY:', AI_KEY);
 
@@ -26,9 +26,17 @@ class AIService {
     }
   }
 
-  static async getCountrySpecificGoals(countryCode: string): Promise<AIGoalsResponse> {
+  static async getCountrySpecificGoals(
+    countryCode: string,
+    householdProfile?: {
+      composition: 'single' | 'couple' | 'family';
+      size: number;
+      primaryAge: number;
+      hasChildren: boolean;
+    }
+  ): Promise<AIGoalsResponse> {
     try {
-      const prompt = PromptBuilder.goals(countryCode);
+      const prompt = PromptBuilder.goals(countryCode, householdProfile);
       const response = await this.generateContent(prompt.prompt);
       return JSON.parse(response.text());
     } catch (error) {
@@ -38,6 +46,7 @@ class AIService {
   }
 
   static async getFinancialAdvice(context: string): Promise<string> {
+    console.log('Getting financial advice for:', context);
     try {
       const prompt = PromptBuilder.advice(context);
       const response = await this.generateContent(prompt.prompt);
@@ -56,7 +65,6 @@ class AIService {
     budgetData: string;
   }): Promise<BudgetAnalysisResponse> {
     try {
-
       const prompt = PromptBuilder.budgetAnalysis(params);
       const response = await this.generateContent(prompt.prompt);
       return JSON.parse(response.text());
