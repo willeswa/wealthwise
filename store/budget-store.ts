@@ -1,11 +1,10 @@
 import { create } from 'zustand';
-import { BudgetCategory, BudgetInsight, BudgetSummary } from '../utils/types/budget';
-import { addBudgetCategory, getBudgetSummary, updateBudgetCategory, calculateBudgetInsights, getLatestAIInsights } from '../utils/db/budget';
-import { useInvestmentStore } from './investment-store';
-import { useDebtStore } from './debt-store';
+import { addBudgetCategory, calculateBudgetInsights, getBudgetSummary, getLatestAIInsights, updateBudgetCategory } from '../utils/db/budget';
 import { getDefaultCurrency, setDefaultCurrency } from '../utils/db/utils/settings';
 import { AIInsight } from '../utils/types/ai';
-import { getDatabase } from '@/utils/db/utils/setup';
+import { BudgetCategory, BudgetInsight, BudgetSummary } from '../utils/types/budget';
+import { useDebtStore } from './debt-store';
+import { useInvestmentStore } from './investment-store';
 
 interface BudgetStore {
   summary: BudgetSummary | null;

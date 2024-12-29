@@ -1,7 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIGoalsResponse, BudgetAnalysisResponse, PromptBuilder } from './prompt';
 
-const AI_KEY = "AIzaSyA0M4U2S5sM-hYMgDuputNVvXUf9YD4xE8";
+const AI_KEY = process.env.GEMINI_API_KEY;
+
+console.log('AI_KEY:', AI_KEY);
 
 let aiClient: GoogleGenerativeAI;
 
