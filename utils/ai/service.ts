@@ -1,8 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { AIGoalsResponse, PromptBuilder } from './prompt';
+import { AIGoalsResponse, BudgetAnalysisResponse, PromptBuilder } from './prompt';
 
-const AI_KEY = process.env.GEMINI_KEY;
-
+const AI_KEY = "AIzaSyA0M4U2S5sM-hYMgDuputNVvXUf9YD4xE8";
 
 let aiClient: GoogleGenerativeAI;
 
@@ -44,6 +43,24 @@ class AIService {
     } catch (error) {
       console.error('Failed to get financial advice:', error);
       throw new Error('Failed to generate financial advice');
+    }
+  }
+
+  static async analyzeBudget(params: {
+    country: string;
+    goal: string;
+    debt: string;
+    investments: string;
+    budgetData: string;
+  }): Promise<BudgetAnalysisResponse> {
+    try {
+
+      const prompt = PromptBuilder.budgetAnalysis(params);
+      const response = await this.generateContent(prompt.prompt);
+      return JSON.parse(response.text());
+    } catch (error) {
+      console.error('Failed to analyze budget:', error);
+      throw new Error('Failed to generate budget insights');
     }
   }
 }

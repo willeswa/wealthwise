@@ -243,6 +243,10 @@ export const initDatabase = async () => {
       -- Set default country to Kenya
       INSERT OR IGNORE INTO settings (key, value) VALUES ('country_code', 'KE');
 
+      -- Add last_ai_insight_date to settings if not exists
+      INSERT OR IGNORE INTO settings (key, value) 
+      VALUES ('last_ai_insight_date', '2000-01-01');
+
       -- Create insights table for caching calculated metrics
       CREATE TABLE IF NOT EXISTS budget_insights (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -398,12 +402,70 @@ export const initDatabase = async () => {
         DELETE FROM contributions
         WHERE expense_id = OLD.id;
       END;
+
+      -- Update settings table with new AI-related settings if not exists
+      INSERT OR IGNORE INTO settings (key, value) VALUES 
+        ('ai_enabled', 'true'),
+        ('ai_insight_frequency', '7'),
+        ('ai_personalization_level', 'balanced');
+
+      -- Create AI insights table
+      CREATE TABLE IF NOT EXISTS ai_insights (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL CHECK(type IN ('spending', 'saving', 'alert', 'recommendation')),
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        category TEXT,
+        amount DECIMAL(10,2),
+        impact_score INTEGER CHECK(impact_score BETWEEN 1 AND 10),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        valid_until TIMESTAMP,
+        acted_on BOOLEAN DEFAULT 0,
+        dismissed BOOLEAN DEFAULT 0
+      );
+
+      -- Create index for faster lookups on active insights
+      CREATE INDEX IF NOT EXISTS idx_active_insights 
+      ON ai_insights(created_at, valid_until, dismissed)
+      WHERE dismissed = 0;
+
+      -- Create AI insight actions table
+      CREATE TABLE IF NOT EXISTS ai_insight_actions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        insight_id INTEGER NOT NULL,
+        action_type TEXT NOT NULL CHECK(action_type IN ('applied', 'dismissed', 'saved')),
+        action_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        notes TEXT,
+        FOREIGN KEY (insight_id) REFERENCES ai_insights(id)
+          ON DELETE CASCADE
+      );
+
+      -- Create trigger to automatically expire old insights
+      CREATE TRIGGER IF NOT EXISTS expire_old_insights
+      AFTER INSERT ON ai_insights
+      BEGIN
+        UPDATE ai_insights 
+        SET dismissed = 1
+        WHERE valid_until < CURRENT_TIMESTAMP 
+        AND dismissed = 0;
+      END;
+
+      -- Create trigger to track insight effectiveness
+      CREATE TRIGGER IF NOT EXISTS track_insight_action
+      AFTER INSERT ON ai_insight_actions
+      BEGIN
+        UPDATE ai_insights
+        SET acted_on = CASE 
+          WHEN NEW.action_type IN ('applied', 'saved') THEN 1
+          ELSE acted_on
+        END
+        WHERE id = NEW.insight_id;
+      END;
     `);
 
     // Seed investment types after table creation
     await seedInvestmentTypes(db);
 
-    console.log('Database initialization successful');
     return db;
   } catch (error) {
     console.error('Error initializing database:', error);

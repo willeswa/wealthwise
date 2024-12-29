@@ -19,7 +19,6 @@ export const ExpensesList = () => {
     updateStatus 
   } = useExpenseStore();
 
-  console.log(expenses);
 
   const groupedExpenses = React.useMemo(() => {
     const groups = expenses.reduce((acc, expense) => {

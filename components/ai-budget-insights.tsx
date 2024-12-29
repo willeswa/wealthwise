@@ -1,8 +1,26 @@
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Card } from "./card";
 import { colors } from "../utils/colors";
+import { useBudgetStore } from "@/store/budget-store";
+import { executeAIAnalysis } from '../utils/background/task-manager';
+import { checkAIInsightsEligibility } from '../utils/ai/helpers';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const FINANCE_COLORS = {
+  accent: '#2563eb', // Refined blue
+  impactColors: {
+    high: '#dc2626',    // Refined red
+    medium: '#2563eb',  // Refined blue
+    low: '#16a34a',     // Refined green
+  },
+  impactBackgrounds: {
+    high: 'rgba(255, 82, 82, 0.1)',
+    medium: 'rgba(30, 136, 229, 0.1)',
+    low: 'rgba(76, 175, 80, 0.1)',
+  }
+};
 
 interface InsightItem {
   icon: keyof typeof Ionicons.glyphMap;
@@ -13,68 +31,77 @@ interface InsightItem {
 }
 
 interface Props {
-  insights?: InsightItem[];
   onOptimize?: () => void;
 }
 
-const defaultInsights: InsightItem[] = [
-  {
-    icon: "trending-down",
-    title: "Spending Pattern",
-    message: "Your food expenses have increased by 15% compared to last month. Consider meal planning to reduce costs.",
-    iconColor: colors.accent,
-    iconBackground: 'rgba(0, 200, 83, 0.1)',
-  },
-  {
-    icon: "save",
-    title: "Savings Opportunity",
-    message: "You could save $200 more by reducing entertainment expenses. This would help reach your savings goal faster.",
-    iconColor: colors.primary,
-    iconBackground: 'rgba(0, 150, 136, 0.1)',
-  },
-  {
-    icon: "warning",
-    title: "Budget Alert",
-    message: "You're close to exceeding your shopping budget. Consider postponing non-essential purchases.",
-    iconColor: "#FF4040",
-    iconBackground: "rgba(255, 64, 64, 0.1)",
-  },
-];
+export const AIBudgetInsights = ({ onOptimize }: Props) => {
+  const { aiInsights, fetchLatestInsights } = useBudgetStore();
+  const [checking, setChecking] = useState(false);
 
-export const AIBudgetInsights = ({ insights = defaultInsights, onOptimize }: Props) => {
+  useEffect(() => {
+    checkAndUpdateInsights();
+  }, []);
+
+  const checkAndUpdateInsights = async () => {
+    try {
+      setChecking(true);
+      const eligibility = await checkAIInsightsEligibility();
+      
+      if (eligibility.eligible) {
+        await executeAIAnalysis();
+      }
+      
+      await fetchLatestInsights();
+    } catch (error) {
+      console.error('Error checking/updating insights:', error);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  // Transform AI insights to component format
+  const formattedInsights = aiInsights.map(insight => ({
+    icon: getIconForInsightType(insight.type),
+    title: insight.title,
+    message: insight.message,
+    iconColor: getColorForImpact(insight.impact_score),
+    iconBackground: getBackgroundForImpact(insight.impact_score),
+  }));
+
+  if (!formattedInsights.length) {
+    return null;
+  }
+
   return (
-    <Card>
-      <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Ionicons name="bulb" size={24} color={colors.accent} />
-          <Text style={styles.title}>AI Budget Insights</Text>
+    <Card style={styles.container}>
+      <LinearGradient
+        colors={['rgba(37, 99, 235, 0.08)', 'rgba(37, 99, 235, 0)']}
+        style={styles.headerGradient}
+      >
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Ionicons name="sparkles" size={24} color={FINANCE_COLORS.accent} />
+            <Text style={styles.title}>AI Insights</Text>
+          </View>
+          <Text style={styles.subtitle}>Personalized financial recommendations</Text>
         </View>
-        <TouchableOpacity 
-          style={styles.optimizeButton}
-          onPress={onOptimize}
-        >
-          <Ionicons name="flash" size={16} color={colors.background.card} />
-          <Text style={styles.optimizeButtonText}>Optimize</Text>
-        </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       <View style={styles.insightsList}>
-        {insights.map((insight, index) => (
-          <View key={index} style={styles.insightItem}>
-            <View style={[
-              styles.insightIcon,
-              { backgroundColor: insight.iconBackground }
-            ]}>
-              <Ionicons 
-                name={insight.icon} 
-                size={20} 
-                color={insight.iconColor} 
-              />
-            </View>
-            <View style={styles.insightContent}>
-              <Text style={styles.insightTitle}>{insight.title}</Text>
-              <Text style={styles.insightText}>{insight.message}</Text>
-            </View>
+        {formattedInsights.map((insight, index) => (
+          <View 
+            key={index} 
+            style={[
+              styles.insightItem,
+              { borderLeftColor: insight.iconColor }
+            ]}
+          >
+            <Text numberOfLines={1} style={styles.insightTitle}>
+              {insight.title}
+            </Text>
+            <Text style={styles.insightText}>
+              {insight.message}
+            </Text>
           </View>
         ))}
       </View>
@@ -82,12 +109,40 @@ export const AIBudgetInsights = ({ insights = defaultInsights, onOptimize }: Pro
   );
 };
 
+function getIconForInsightType(type: string): keyof typeof Ionicons.glyphMap {
+  switch (type) {
+    case 'spending': return 'trending-down';
+    case 'saving': return 'save';
+    case 'alert': return 'warning';
+    case 'recommendation': return 'bulb';
+    default: return 'information-circle';
+  }
+}
+
+function getColorForImpact(score: number) {
+  if (score >= 8) return FINANCE_COLORS.impactColors.high;
+  if (score >= 5) return FINANCE_COLORS.impactColors.medium;
+  return FINANCE_COLORS.impactColors.low;
+}
+
+function getBackgroundForImpact(score: number) {
+  if (score >= 8) return FINANCE_COLORS.impactBackgrounds.high;
+  if (score >= 5) return FINANCE_COLORS.impactBackgrounds.medium;
+  return FINANCE_COLORS.impactBackgrounds.low;
+}
+
 const styles = StyleSheet.create({
+  container: {
+    overflow: 'hidden',
+    borderRadius: 16,
+  },
+  headerGradient: {
+    padding: 20,
+    marginHorizontal: -16,
+    marginTop: -16,
+  },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    gap: 4,
   },
   titleContainer: {
     flexDirection: 'row',
@@ -95,55 +150,46 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
     color: colors.text.primary,
+    letterSpacing: -0.5,
   },
-  optimizeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.accent,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 4,
-  },
-  optimizeButtonText: {
-    color: colors.background.main,
+  subtitle: {
     fontSize: 14,
-    fontWeight: '600',
+    color: colors.text.secondary,
+    marginLeft: 32,
+    fontWeight: '500',
   },
   insightsList: {
-    gap: 8,
+    gap: 12,
+    marginTop: 16,
   },
   insightItem: {
-    flexDirection: 'row',
-    gap: 4,
-    backgroundColor: colors.background.highlight,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-  },
-  insightIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  insightContent: {
-    flex: 1,
-    gap: 4,
+    backgroundColor: colors.background.card,
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    gap: 6,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   insightTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.text.primary,
-    marginBottom: 4,
+    letterSpacing: -0.3,
   },
   insightText: {
     fontSize: 14,
     color: colors.text.secondary,
     lineHeight: 20,
-  },
+    letterSpacing: -0.2,
+  }
 });

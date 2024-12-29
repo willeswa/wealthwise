@@ -5,6 +5,7 @@ import { Expense, ExpenseCategory } from '../types/expense';
 import { getIncomes } from './income';
 import { getDatabase } from './utils/setup';
 import { getDefaultCurrency } from './utils/settings';
+import { AIInsight } from '../types/ai';
 
 // Helper to determine category type based on expense category type
 const getCategoryType = (categoryType: string): 'want' | 'need' | 'savings' | 'debt' => {
@@ -270,5 +271,22 @@ export const calculateBudgetInsights = async (): Promise<BudgetInsight> => {
   } catch (error) {
     console.error('Error calculating budget insights:', error);
     throw error;
+  }
+};
+
+export const getLatestAIInsights = async (limit: number = 3): Promise<AIInsight[]> => {
+  const db = getDatabase();
+  try {
+    const insights = await db.getAllAsync<AIInsight>(`
+      SELECT * FROM ai_insights
+      WHERE dismissed = 0
+      AND datetime(valid_until) > datetime('now')
+      ORDER BY impact_score DESC, created_at DESC
+      LIMIT ?
+    `, [limit]);
+    return insights;
+  } catch (error) {
+    console.error('Error fetching AI insights:', error);
+    throw new Error('Failed to fetch AI insights');
   }
 };

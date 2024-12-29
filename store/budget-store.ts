@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 import { BudgetCategory, BudgetInsight, BudgetSummary } from '../utils/types/budget';
-import { addBudgetCategory, getBudgetSummary, updateBudgetCategory, calculateBudgetInsights } from '../utils/db/budget';
+import { addBudgetCategory, getBudgetSummary, updateBudgetCategory, calculateBudgetInsights, getLatestAIInsights } from '../utils/db/budget';
 import { useInvestmentStore } from './investment-store';
 import { useDebtStore } from './debt-store';
-import { getDefaultCurrency } from '../utils/db/utils/settings';
+import { getDefaultCurrency, setDefaultCurrency } from '../utils/db/utils/settings';
+import { AIInsight } from '../utils/types/ai';
+import { getDatabase } from '@/utils/db/utils/setup';
 
 interface BudgetStore {
   summary: BudgetSummary | null;
@@ -16,6 +18,8 @@ interface BudgetStore {
   fetchInsights: () => Promise<void>;
   defaultCurrency: string;
   setDefaultCurrency: (currency: string) => Promise<void>;
+  aiInsights: AIInsight[];
+  fetchLatestInsights: () => Promise<void>;
 }
 
 export const useBudgetStore = create<BudgetStore>((set) => ({
@@ -24,6 +28,7 @@ export const useBudgetStore = create<BudgetStore>((set) => ({
   error: null,
   insights: null,
   defaultCurrency: 'USD',
+  aiInsights: [],
 
   fetchSummary: async () => {
     try {
@@ -94,6 +99,19 @@ export const useBudgetStore = create<BudgetStore>((set) => ({
       await useBudgetStore.getState().fetchSummary();
     } catch (error) {
       set({ error: 'Failed to update default currency' });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  fetchLatestInsights: async () => {
+    try {
+      set({ loading: true });
+      const insights = await getLatestAIInsights();
+      set({ aiInsights: insights });
+    } catch (error) {
+      console.error('Error fetching AI insights:', error);
+      set({ error: 'Failed to fetch AI insights' });
     } finally {
       set({ loading: false });
     }

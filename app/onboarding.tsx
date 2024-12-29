@@ -78,6 +78,9 @@ export default function Onboarding() {
     aiEnabled: null
   });
 
+  // Add loading state
+  const [isLoading, setIsLoading] = useState(false);
+
   // Keep track of completed steps
   const [completedSteps, setCompletedSteps] = useState<{
     [key: string]: boolean;
@@ -186,7 +189,6 @@ export default function Onboarding() {
     try {
       setStepData(prev => ({ ...prev, isLoadingAI: true }));
       const response = await AIService.getCountrySpecificGoals(countryCode);
-      console.log('AI Goals:', response);
       setStepData(prev => ({ 
         ...prev, 
         aiGoals: response.goals,
@@ -203,11 +205,11 @@ export default function Onboarding() {
   // Modify handleNextStep to handle AI goals fetching
   const handleNextStep = async () => {
     if (step === 0) {
-      // If moving from country selection to goals
+      setIsLoading(true);
       const success = await fetchAIGoals(stepData.country);
+      setIsLoading(false);
       if (!success) {
         // Continue anyway, will use default goals
-        console.log('Using default goals due to AI failure');
       }
     }
     
@@ -319,6 +321,7 @@ export default function Onboarding() {
               }
             }}
             disabled={!canContinue()}
+            loading={isLoading}
             style={styles.continueButton}
           />
         </View>

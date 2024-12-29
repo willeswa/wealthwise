@@ -35,7 +35,6 @@ export const ExpenseListItem = ({
   status,
   onToggleStatus,
 }: ExpenseListItemProps) => {
-  console.log(currency)
   const swipeableRef = useRef<Swipeable>(null);
 
   const closeSwipeable = () => {

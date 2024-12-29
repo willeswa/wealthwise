@@ -37,7 +37,6 @@ export const useExpenseStore = create<ExpenseStore>((set) => ({
         getDefaultCurrency(),
         getExpenseCategories()
       ]);
-      console.log('Fetched expenses:', currency);
       set({ 
         expenses: data, 
         defaultCurrency: currency, 

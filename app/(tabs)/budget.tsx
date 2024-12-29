@@ -1,15 +1,20 @@
+import { AppBar } from "@/components/app-bar";
+import { ScreenBackground } from "@/components/screen-background";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
-import { Card } from "../../components/card";
-import { colors } from "../../utils/colors";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { AIBudgetInsights } from "../../components/ai-budget-insights";
+import { Card } from "../../components/card";
 import { ExpensesList } from "../../components/expenses-list";
 import { IncomeList } from "../../components/income-list";
 import { useBudgetStore } from "../../store/budget-store";
-import { useRouter } from 'expo-router';
-import { ScreenBackground } from '@/components/screen-background';
-import { AppBar } from "@/components/app-bar";
+import { colors } from "../../utils/colors";
 
 const BudgetInsights = () => {
   const { insights, fetchInsights, loading } = useBudgetStore();
@@ -34,27 +39,52 @@ const BudgetInsights = () => {
       <Text style={styles.insightsTitle}>This Month</Text>
       <View style={styles.insightsGrid}>
         <View style={styles.insightItem}>
-          <View style={[styles.iconContainer, { backgroundColor: colors.background.success }]}>
-            <Ionicons 
-              name={insights.monthlyChange >= 0 ? "trending-up" : "trending-down"} 
-              size={20} 
-              color={insights.monthlyChange >= 0 ? colors.success : colors.warning} 
+          <View
+            style={[
+              styles.iconContainer,
+              { backgroundColor: colors.background.success },
+            ]}
+          >
+            <Ionicons
+              name={
+                insights.monthlyChange >= 0 ? "trending-up" : "trending-down"
+              }
+              size={20}
+              color={
+                insights.monthlyChange >= 0 ? colors.success : colors.warning
+              }
             />
           </View>
-          <Text style={styles.insightValue}>{insights.monthlyChange.toFixed(1)}%</Text>
+          <Text style={styles.insightValue}>
+            {insights.monthlyChange.toFixed(1)}%
+          </Text>
           <Text style={styles.insightDesc}>vs. Last Month</Text>
         </View>
 
         <View style={styles.insightItem}>
-          <View style={[styles.iconContainer, { backgroundColor: colors.background.warning }]}>
+          <View
+            style={[
+              styles.iconContainer,
+              { backgroundColor: colors.background.warning },
+            ]}
+          >
             <Ionicons name="warning" size={20} color={colors.warning} />
           </View>
-          <Text style={styles.insightValue}>{insights.highestIncrease.category}</Text>
-          <Text style={styles.insightDesc}>+{insights.highestIncrease.percentage.toFixed(1)}% this month</Text>
+          <Text style={styles.insightValue}>
+            {insights.highestIncrease.category}
+          </Text>
+          <Text style={styles.insightDesc}>
+            +{insights.highestIncrease.percentage.toFixed(1)}% this month
+          </Text>
         </View>
 
         <View style={styles.insightItem}>
-          <View style={[styles.iconContainer, { backgroundColor: colors.background.accent }]}>
+          <View
+            style={[
+              styles.iconContainer,
+              { backgroundColor: colors.background.accent },
+            ]}
+          >
             <Ionicons name="time" size={20} color={colors.accent} />
           </View>
           <Text style={styles.insightValue}>{insights.upcomingBills}</Text>
@@ -62,7 +92,12 @@ const BudgetInsights = () => {
         </View>
 
         <View style={styles.insightItem}>
-          <View style={[styles.iconContainer, { backgroundColor: colors.background.success }]}>
+          <View
+            style={[
+              styles.iconContainer,
+              { backgroundColor: colors.background.success },
+            ]}
+          >
             <Ionicons name="trophy" size={20} color={colors.success} />
           </View>
           <Text style={styles.insightValue}>{insights.savingsProgress}%</Text>
@@ -78,11 +113,16 @@ export default function Budget() {
     <View style={styles.container}>
       <ScreenBackground color1={colors.success} color2={colors.accent} />
       <AppBar title="Budget" subtitle="Track your spending" />
-      <ScrollView style={[styles.scrollView, { marginTop: 60 }]} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={[styles.scrollView, { marginTop: 60 }]}
+        contentContainerStyle={styles.scrollContent}
+      >
         <Card>
           <BudgetInsights />
         </Card>
+
         <AIBudgetInsights onOptimize={() => console.log("Optimize budget")} />
+
         <Card>
           <IncomeList />
         </Card>
@@ -116,18 +156,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   insightsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,  // Reduced gap
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8, // Reduced gap
+    justifyContent: "space-between",
   },
   insightItem: {
-    width: '48.5%',  // Slightly adjusted for tighter spacing
-    padding: 12,     // Reduced padding
-    alignItems: 'flex-start',
+    width: "48.5%", // Slightly adjusted for tighter spacing
+    padding: 12, // Reduced padding
+    alignItems: "flex-start",
     backgroundColor: colors.background.card,
     borderRadius: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 1,
@@ -136,15 +176,15 @@ const styles = StyleSheet.create({
     shadowRadius: 1,
     elevation: 1,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.01)',
+    borderColor: "rgba(0,0,0,0.01)",
   },
   iconContainer: {
-    width: 36,      // Slightly smaller
-    height: 36,     // Slightly smaller
+    width: 36, // Slightly smaller
+    height: 36, // Slightly smaller
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,  // Reduced margin
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8, // Reduced margin
   },
   insightLabel: {
     fontSize: 12,
@@ -152,19 +192,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   insightValue: {
-    fontSize: 18,    // Slightly smaller
+    fontSize: 18, // Slightly smaller
     fontWeight: "700",
     color: colors.text.primary,
-    marginBottom: 2,  // Reduced margin
+    marginBottom: 2, // Reduced margin
   },
   insightDesc: {
-    fontSize: 12,    // Smaller
+    fontSize: 12, // Smaller
     color: colors.text.secondary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   loadingState: {
     height: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

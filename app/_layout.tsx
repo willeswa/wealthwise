@@ -1,14 +1,28 @@
 import { Stack, Redirect } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { useDatabase } from "../hooks/useDatabase";
 import { usePreferencesStore } from "../store/preferences-store";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../global.css";
+import { initializeBackgroundTasks, checkBackgroundStatus } from "@/utils/background/task-manager";
 
 export default function RootLayout() {
-  const { isReady, error } = useDatabase();
+  const { isReady } = useDatabase();
+  const aiEnabled = usePreferencesStore((state) => state.aiEnabled);
   const hasCompletedOnboarding = usePreferencesStore((state) => state.hasCompletedOnboarding);
+
+  useEffect(() => {
+    if (isReady && aiEnabled) {
+      initializeBackgroundTasks()
+        .then(() => {
+          return checkBackgroundStatus();
+        })
+        .then((status) => {
+        })
+        .catch(console.error);
+    }
+  }, [isReady, aiEnabled]);
 
   if (!isReady) {
     return (

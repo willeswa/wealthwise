@@ -3461,6 +3461,13 @@ expo-asset@~11.0.1:
     invariant "^2.2.4"
     md5-file "^3.2.3"
 
+expo-background-fetch@~13.0.3:
+  version "13.0.3"
+  resolved "https://registry.yarnpkg.com/expo-background-fetch/-/expo-background-fetch-13.0.3.tgz#8753a4a39f2eb04cb84fbfffabb8cf2904dd2eed"
+  integrity sha512-wayjvMima858mvEqsXo6camcoeBLusVJnvMPdG0GKi2d9hKuQXCNP90sShDpgXOEIVzjN0UzZ8PqULgQWbqdAg==
+  dependencies:
+    expo-task-manager "~12.0.0"
+
 expo-blur@~14.0.1:
   version "14.0.1"
   resolved "https://registry.yarnpkg.com/expo-blur/-/expo-blur-14.0.1.tgz#4bdbec43b5015891990e78d31d8ff2f1f5d27464"
@@ -3589,6 +3596,13 @@ expo-system-ui@~4.0.6:
   dependencies:
     "@react-native/normalize-colors" "0.76.5"
     debug "^4.3.2"
+
+expo-task-manager@~12.0.0, expo-task-manager@~12.0.3:
+  version "12.0.3"
+  resolved "https://registry.yarnpkg.com/expo-task-manager/-/expo-task-manager-12.0.3.tgz#0814522fd8ee78c43bf6bc8ef22b0694c463f5c2"
+  integrity sha512-XNbDWPqBJw9kuWrYFhpcjRBbuxMUlgiFdEUHpm7VmMqGmm86UAZTO20zSGkM0U25yIcmQgsHiEbfV9B2S84dqA==
+  dependencies:
+    unimodules-app-loader "~5.0.0"
 
 expo-web-browser@~14.0.1:
   version "14.0.1"
@@ -7561,6 +7575,11 @@ unicode-property-aliases-ecmascript@^2.0.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/unicode-property-aliases-ecmascript/-/unicode-property-aliases-ecmascript-2.1.0.tgz#43d41e3be698bd493ef911077c9b131f827e8ccd"
   integrity sha512-6t3foTQI9qne+OZoVQB/8x8rk2k1eVy1gRXhV3oFQ5T6R1dqQ1xtin3XqSlx3+ATBkliTaR/hHyJBm+LVPNM8w==
+
+unimodules-app-loader@~5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/unimodules-app-loader/-/unimodules-app-loader-5.0.0.tgz#2824ab4378f503a811c10a21f050bc09caf4fe41"
+  integrity sha512-0Zc3u344NmlvyQBmcgnxHcQhrLeFV4hn80U6S4YwAfaexXCWmiHOzMe4+P+YhgHiRWb5lJgadr08hLbee3XTHg==
 
 unique-filename@^3.0.0:
   version "3.0.0"
