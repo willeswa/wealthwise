@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { Investment, InvestmentInput, Contribution, ContributionInput, InvestmentType, InvestmentPerformance, PortfolioAnalytics } from '../utils/types/investment';
-import { addInvestment, deleteInvestment, getInvestments, addContribution, getContributions, getInvestmentTypes, updateInvestment, getInvestmentPerformance } from '../utils/db/investments';
+import { Investment, InvestmentInput, Contribution, ContributionInput, InvestmentType, InvestmentPerformance, PortfolioAnalytics, InvestmentInsight } from '../utils/types/investment';
+import { addInvestment, deleteInvestment, getInvestments, addContribution, getContributions, getInvestmentTypes, updateInvestment, getInvestmentPerformance, getLatestInsights } from '../utils/db/investments';
 import { analyzePortfolio } from '@/utils/investment-analytics';
 import { getDatabase } from '@/utils/db/utils/setup';
 import { useBudgetStore } from './budget-store';
@@ -25,6 +25,13 @@ interface InvestmentStore {
   calculateAnalytics: () => void;
   getPendingContributions: () => Promise<void>;
   defaultCurrency: string;
+  insights: {
+    daily: InvestmentInsight | null;
+    weekly: InvestmentInsight[];
+    loading: boolean;
+    error: string | null;
+  };
+  fetchInsights: () => Promise<void>;
 }
 
 export const useInvestmentStore = create<InvestmentStore>((set, get) => ({
@@ -37,6 +44,12 @@ export const useInvestmentStore = create<InvestmentStore>((set, get) => ({
   analytics: null,
   performances: {},
   defaultCurrency: 'USD',
+  insights: {
+    daily: null,
+    weekly: [],
+    loading: false,
+    error: null
+  },
 
   fetchInvestments: async () => {
     try {
@@ -217,4 +230,36 @@ export const useInvestmentStore = create<InvestmentStore>((set, get) => ({
       console.error('Error fetching pending contributions:', error);
     }
   },
+
+  fetchInsights: async () => {
+    try {
+      set(state => ({ 
+        insights: { 
+          ...state.insights,
+          loading: true, 
+          error: null 
+        } 
+      }));
+      
+      const insights = await getLatestInsights();
+      
+      set(state => ({
+        insights: {
+          ...state.insights,
+          daily: insights.daily,
+          weekly: insights.weekly,
+          loading: false
+        }
+      }));
+    } catch (error) {
+      set(state => ({
+        insights: {
+          ...state.insights,
+          error: 'Failed to fetch investment insights',
+          loading: false
+        }
+      }));
+      console.error('Error fetching insights:', error);
+    }
+  }
 }));

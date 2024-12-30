@@ -1,5 +1,6 @@
 import { addDays, differenceInDays, format, isAfter, subMonths } from "date-fns";
 import { getDatabase } from "../db/utils/setup";
+import { usePreferencesStore } from '../../store/preferences-store';
 
 const CHECK_EXPIRY = true; // Toggle for debugging
 
@@ -162,6 +163,7 @@ export async function updateLastInsightRequest(): Promise<void> {
 
 export async function collectAIAnalysisData(): Promise<AIAnalysisData> {
   const db = getDatabase();
+  const { country, primaryGoal } = usePreferencesStore.getState();
   const currentDate = new Date();
   const currentMonth = format(currentDate, 'yyyy-MM');
   const previousMonth = format(subMonths(currentDate, 1), 'yyyy-MM');
@@ -250,6 +252,8 @@ export async function collectAIAnalysisData(): Promise<AIAnalysisData> {
 
     return {
       monthlyIncome: totalIncome,
+      country,
+      goal: primaryGoal.value,
       recurringExpenses: recurringExpenses.map((e: any) => ({
         category: e.category,
         amount: e.amount,

@@ -10,14 +10,14 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.willies.wealthwise"
+      "bundleIdentifier": "com.monkpadapps.wealthwise"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.willies.wealthwise"
+      "package": "com.monkpadapps.wealthwise"
     },
     "web": {
       "bundler": "metro",
@@ -40,6 +40,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "00e6efb9-bfae-4f83-8e26-df813d194330"
+      }
+    },
+    "owner": "monkpadapps"
   }
 }

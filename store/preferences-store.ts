@@ -19,7 +19,6 @@ export const usePreferencesStore = create<PreferencesStore>()(
       country: defaultCountry.code,
       currency: defaultCountry.currency,
       locale: Localization.locale,
-      monthlyIncome: 0,
       primaryGoal: 'SAVE_EMERGENCY',
       aiEnabled: false,
       hasCompletedOnboarding: false,

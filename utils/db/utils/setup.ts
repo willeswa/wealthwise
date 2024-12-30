@@ -485,6 +485,31 @@ export const initDatabase = async () => {
           END
           WHERE id = NEW.insight_id;
         END;
+
+        -- Create investment insights table
+        CREATE TABLE IF NOT EXISTS investment_insights (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            impact TEXT,
+            action_required TEXT,
+            urgency TEXT,
+            source TEXT,
+            affected_investments TEXT,
+            rationale TEXT,
+            requirements TEXT,
+            potential_return TEXT,
+            insight_type TEXT CHECK(insight_type IN ('daily', 'weekly')) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            acted_on BOOLEAN DEFAULT 0,
+            dismissed BOOLEAN DEFAULT 0
+        );
+
+        -- Create index for active insights
+        CREATE INDEX IF NOT EXISTS idx_active_investment_insights 
+        ON investment_insights(created_at, insight_type, dismissed)
+        WHERE dismissed = 0;
       `);
     });
 

@@ -10,6 +10,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View
 import { useRouter } from 'expo-router';
 import { ScreenBackground } from '@/components/screen-background';
 import { AppBar } from "@/components/app-bar";
+import { InvestmentAIInsights } from "@/components/investment-ai-insights";
 
 const PortfolioOverview = () => {
   const { investments, loading, analytics, defaultCurrency } = useInvestmentStore();
@@ -92,7 +93,7 @@ const PerformanceCard = () => {
 };
 
 export default function Investment() {
-  const { fetchInvestments, analytics, investments } = useInvestmentStore();
+  const { fetchInvestments, analytics, investments, defaultCurrency } = useInvestmentStore();
 
   useEffect(() => {
     fetchInvestments();
@@ -106,6 +107,8 @@ export default function Investment() {
         <Card>
           <PortfolioOverview />
         </Card>
+
+        <InvestmentAIInsights />
 
         {investments.length > 0 && <Card>
           <PerformanceCard />

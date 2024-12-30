@@ -24,6 +24,22 @@ export interface Investment {
   investment_type?: InvestmentType;
 }
 
+export interface InvestmentInsight {
+  type: 'opportunity' | 'diversification' | 'trend';
+  title: string;
+  description: string;
+  rationale: string;
+  requirements: {
+    minAmount: number;
+    riskLevel: 'Low' | 'Medium' | 'High';
+    timeHorizon: 'Short' | 'Medium' | 'Long';
+  };
+  potentialReturn: {
+    estimated: number;
+    timeframe: string;
+  };
+}
+
 export interface Contribution {
   id?: number;
   investment_id: number;

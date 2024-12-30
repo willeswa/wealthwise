@@ -2,6 +2,7 @@ import { BackgroundFetchResult } from 'expo-background-fetch';
 import { collectAIAnalysisData, checkAIInsightsEligibility, clearOldInsights } from '../ai/helpers';
 import { AIService } from '../ai/service';
 import { getDatabase } from '../db/utils/setup';
+import { usePreferencesStore } from '../../store/preferences-store';
 
 // Add a helper function to sanitize AI messages
 function sanitizeMessage(message: string, data: any): string {
@@ -15,6 +16,7 @@ function sanitizeMessage(message: string, data: any): string {
 }
 
 export async function handleAIAnalysisTask(): Promise<BackgroundFetchResult> {
+    const {country} = usePreferencesStore.getState();
     try {
         await clearOldInsights();
 
@@ -28,7 +30,7 @@ export async function handleAIAnalysisTask(): Promise<BackgroundFetchResult> {
         try {
             const insights = await AIService.analyzeBudget({
                 ...analysisData,
-                country: 'US',
+                country: country,
                 goal: 'SAVE_EMERGENCY',
                 debt: JSON.stringify(analysisData.debts),
                 investments: JSON.stringify(analysisData.investments),
@@ -125,4 +127,148 @@ function extractAmount(message: string): number | null {
         return parseFloat(match[0].replace(/[^\d.]/g, ''));
     }
     return null;
+}
+
+export async function handleInvestmentInfoTask(): Promise<BackgroundFetchResult> {
+   
+    const {country} = usePreferencesStore.getState();
+
+    try {
+        const db = getDatabase();
+        
+        // Get current portfolio data
+        const portfolio = await db.getAllAsync(`
+            SELECT json_group_array(
+                json_object(
+                    'name', name,
+                    'type', type,
+                    'value', current_value,
+                    'risk_level', risk_level
+                )
+            ) as portfolio
+            FROM investments
+        `);
+
+        const settings = await db.getFirstAsync(`
+            SELECT value as country_code FROM settings WHERE key = 'country_code'
+        `);
+
+        if (!portfolio?.[0]?.portfolio) {
+            return BackgroundFetchResult.NoData;
+        }
+
+        const updates = await AIService.getInvestmentUpdates({
+            country: country || 'KE',
+            riskLevel: 'Medium', // You might want to calculate this
+            portfolio: portfolio[0].portfolio
+        });
+
+        if (!updates?.updates?.length) {
+            return BackgroundFetchResult.NoData;
+        }
+
+        // Store updates in database
+        await db.execAsync(`
+            INSERT INTO investment_insights (
+                type,
+                title,
+                description,
+                impact,
+                action_required,
+                urgency,
+                source,
+                affected_investments,
+                created_at,
+                insight_type
+            ) VALUES ${updates.updates.map(update => `(
+                '${update.type}',
+                '${update.title.replace(/'/g, "''")}',
+                '${update.description.replace(/'/g, "''")}',
+                '${update.impact.replace(/'/g, "''")}',
+                '${update.action.replace(/'/g, "''")}',
+                '${update.urgency}',
+                '${update.source.replace(/'/g, "''")}',
+                '${JSON.stringify(update.affectedInvestments)}',
+                CURRENT_TIMESTAMP,
+                'daily'
+            )`).join(',')}
+        `);
+
+        return BackgroundFetchResult.NewData;
+    } catch (error) {
+        console.error('Investment info task failed:', error);
+        return BackgroundFetchResult.Failed;
+    }
+}
+
+export async function handleInvestmentEmpowermentTask(): Promise<BackgroundFetchResult> {
+    try {
+        const db = getDatabase();
+        const { country, primaryGoal } = usePreferencesStore.getState();
+        
+        // Get user profile and portfolio data
+        const [portfolio, income] = await Promise.all([
+            db.getAllAsync(`
+                SELECT json_group_array(
+                    json_object(
+                        'name', name,
+                        'type', type,
+                        'value', current_value,
+                        'risk_level', risk_level
+                    )
+                ) as portfolio
+                FROM investments
+            `),
+            db.getFirstAsync(`
+                SELECT SUM(amount) as monthly_income
+                FROM income
+                WHERE frequency = 'Monthly'
+            `)
+        ]);
+
+        if (!portfolio?.[0]?.portfolio) {
+            return BackgroundFetchResult.NoData;
+        }
+
+        const opportunities = await AIService.getInvestmentOpportunities({
+            country,
+            goal: primaryGoal.value,
+            riskLevel: 'Medium',
+            experience: 'intermediate',
+            income: income?.monthly_income || 0,
+            portfolio: portfolio[0].portfolio
+        });
+
+        if (!opportunities?.insights?.length) {
+            return BackgroundFetchResult.NoData;
+        }
+
+        // Store opportunities in database
+        await db.execAsync(`
+            INSERT INTO investment_insights (
+                type,
+                title,
+                description,
+                rationale,
+                requirements,
+                potential_return,
+                created_at,
+                insight_type
+            ) VALUES ${opportunities.insights.map(insight => `(
+                '${insight.type}',
+                '${insight.title.replace(/'/g, "''")}',
+                '${insight.description.replace(/'/g, "''")}',
+                '${insight.rationale.replace(/'/g, "''")}',
+                '${JSON.stringify(insight.requirements)}',
+                '${JSON.stringify(insight.potentialReturn)}',
+                CURRENT_TIMESTAMP,
+                'weekly'
+            )`).join(',')}
+        `);
+
+        return BackgroundFetchResult.NewData;
+    } catch (error) {
+        console.error('Investment empowerment task failed:', error);
+        return BackgroundFetchResult.Failed;
+    }
 }

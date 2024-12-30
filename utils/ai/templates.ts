@@ -185,97 +185,67 @@ Example high-quality response:
   ]
 }`;
 
-export const INVESTMENT_INFO_TEMPLATE = `As a personal investment analyst, provide actionable daily updates for this investor's portfolio in {country}.
+export const INVESTMENT_INFO_TEMPLATE = `Analyze this investor's portfolio in {country} for updates as of {today}.
 
-INVESTOR PROFILE:
-Current Portfolio: {portfolio}
+Portfolio: {portfolio}
 Risk Level: {riskLevel}
+Analysis Date: {today}
 
-ANALYSIS REQUIREMENTS:
-- Focus only on user's existing investments
-- Only include information requiring immediate action
-- Consider local market context in {country}
-- Monitor associated market sectors
-- Include regulatory changes if applicable
-
-RESPONSE FORMAT:
+Return a JSON object with this exact structure:
 {
   "updates": [
     {
-      "type": "market_update" | "regulatory" | "risk_alert",
-      "title": "Clear, Action-Oriented Title",
-      "description": "What changed and why it matters",
-      "impact": "Direct impact on user's investments",
-      "action": "Specific steps to take",
-      "urgency": "high" | "medium" | "low",
-      "source": "Information source",
-      "affectedInvestments": ["investment names"]
+      "type": "market_update",
+      "title": "Brief Title",
+      "description": "What changed",
+      "impact": "Impact on portfolio",
+      "action": "Action step",
+      "urgency": "high",
+      "source": "Source name",
+      "affectedInvestments": ["name"],
+      "date": "{today}"
     }
   ]
 }
 
-Focus Areas:
-1. Price movements requiring action
-2. Regulatory changes affecting holdings
-3. Risk alerts for current positions
-4. Corporate actions requiring response
-5. Market events impacting holdings
+Requirements:
+- Only include TODAY'S ({today}) information
+- Focus on existing investments
+- Be specific and actionable
+- Use {country} context`;
 
-Remember:
-- Only include actionable information
-- Focus on existing holdings only
-- Verify information accuracy
-- Stay within {country} regulations`;
+export const INVESTMENT_EMPOWERMENT_TEMPLATE = `Analyze investment opportunities in {country} as of {today}.
 
-export const INVESTMENT_EMPOWERMENT_TEMPLATE = `As a strategic investment advisor, analyze this investor's profile and suggest weekly portfolio enhancements for {country}.
+Profile:
+- Goal: {goal}
+- Risk: {riskLevel}
+- Experience: {experience}
+- Income: {income}
+- Portfolio: {portfolio}
+- Analysis Date: {today}
 
-INVESTOR PROFILE:
-Financial Goal: {goal}
-Risk Tolerance: {riskLevel}
-Investment Experience: {experience}
-Monthly Income: {income}
-Current Portfolio: {portfolio}
-
-ANALYSIS REQUIREMENTS:
-- Suggest portfolio diversification opportunities
-- Identify emerging investment trends
-- Consider local investment vehicles in {country}
-- Match suggestions to user's risk profile
-- Factor in user's financial goals
-- Look for unconventional opportunities
-
-RESPONSE FORMAT:
+Return a JSON object with this exact structure:
 {
   "insights": [
     {
-      "type": "opportunity" | "diversification" | "trend",
-      "title": "Clear Opportunity Title",
-      "description": "Detailed explanation",
-      "rationale": "Why this fits user's profile",
+      "type": "opportunity",
+      "title": "Brief Title",
+      "description": "Clear explanation",
+      "rationale": "Why it fits",
       "requirements": {
-        "minAmount": number,
-        "riskLevel": "Low" | "Medium" | "High",
-        "timeHorizon": "Short" | "Medium" | "Long"
+        "minAmount": 1000,
+        "riskLevel": "Medium",
+        "timeHorizon": "Medium"
       },
       "potentialReturn": {
-        "estimated": number,
-        "timeframe": string
+        "estimated": 10,
+        "timeframe": "12 months"
       }
     }
   ]
 }
 
-Priorities:
-1. Portfolio gaps that need filling
-2. New investment opportunities
-3. Market trends alignment
-4. Risk-return optimization
-5. Goal-based suggestions
-
-Remember:
-- Only suggest investments available in {country}
-- Match recommendations to risk tolerance
-- Consider tax implications
-- Include both traditional and alternative investments
-- Ensure suggestions are actionable
-- Stay within regulatory frameworks`;
+Requirements:
+- Only suggest available investments
+- Match risk tolerance
+- Be specific and actionable`;

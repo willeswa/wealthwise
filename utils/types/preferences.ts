@@ -54,7 +54,6 @@ export interface UserPreferences {
   country: string;
   currency: string;
   locale: string;
-  monthlyIncome: number;
   primaryGoal: FinancialGoal;
   hasCompletedOnboarding: boolean;
   aiEnabled: boolean;

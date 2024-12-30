@@ -1,4 +1,4 @@
-import { Investment, InvestmentInput, InvestmentType, Contribution, ContributionInput, RiskLevel, Liquidity, InvestmentPerformance } from '../types/investment';
+import { Investment, InvestmentInput, InvestmentType, Contribution, ContributionInput, RiskLevel, Liquidity, InvestmentPerformance, InvestmentInsight } from '../types/investment';
 import { getDatabase } from './utils/setup';
 
 export const addInvestment = async (investment: InvestmentInput): Promise<number> => {
@@ -296,6 +296,38 @@ export const updateInvestmentValue = async (
     );
   } catch (error) {
     console.error('Error updating investment value:', error);
+    throw error;
+  }
+};
+
+export const getLatestInsights = async () => {
+  try {
+    const db = getDatabase();
+    
+    // Get most recent daily insight
+    const daily = await db.getFirstAsync<InvestmentInsight>(`
+      SELECT * FROM investment_insights
+      WHERE insight_type = 'daily'
+      AND dismissed = 0
+      ORDER BY created_at DESC
+      LIMIT 1
+    `);
+
+    // Get two most recent weekly insights
+    const weekly = await db.getAllAsync<InvestmentInsight>(`
+      SELECT * FROM investment_insights
+      WHERE insight_type = 'weekly'
+      AND dismissed = 0
+      ORDER BY created_at DESC
+      LIMIT 2
+    `);
+
+    return {
+      daily: daily || null,
+      weekly: weekly || []
+    };
+  } catch (error) {
+    console.error('Error getting investment insights:', error);
     throw error;
   }
 };

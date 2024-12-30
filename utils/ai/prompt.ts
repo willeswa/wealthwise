@@ -21,13 +21,14 @@ export interface AIPrompt {
   prompt: string;
 }
 
-interface InvestmentContext {
+export interface InvestmentContext {
   country: string;
   goal?: string;
   riskLevel: string;
   experience?: string;
   income?: number;
   portfolio: string;
+  currentDate?: string; // ISO date string
 }
 
 export class PromptBuilder {
@@ -76,17 +77,38 @@ export class PromptBuilder {
     };
   }
 
-  static investmentInfo(context: Pick<InvestmentContext, 'country' | 'riskLevel' | 'portfolio'>): AIPrompt {
+  static investmentInfo(context: InvestmentContext & { recentNews?: any[] }): AIPrompt {
+    const portfolio = JSON.parse(context.portfolio);
+    const newsContext = context.recentNews?.length ? 
+      `\nRelevant market news:\n${context.recentNews.map(n => 
+        `- ${n.title}\n  Source: ${n.link}\n  Summary: ${n.snippet}`
+      ).join('\n')}` : '';
+
     return {
       type: 'investment-info',
-      prompt: INVESTMENT_INFO_TEMPLATE
-        .replace('{country}', context.country)
-        .replace('{riskLevel}', context.riskLevel)
-        .replace('{portfolio}', context.portfolio)
+      prompt: `Given the following investment context:
+      Country: ${context.country}
+      Risk Level: ${context.riskLevel}
+      
+      Current Portfolio:
+      ${portfolio.map((inv: any) => 
+        `- ${inv.name} (${inv.type}): Current value ${inv.value}`
+      ).join('\n')}
+
+      ${newsContext}
+
+      Based on the portfolio and news above:
+      1. Analyze how recent news might impact these specific investments
+      2. Identify any regulatory changes affecting these investment types
+      3. Flag any risk alerts relevant to the portfolio
+      4. Suggest specific actions for each affected investment
+
+      Generate relevant investment updates and alerts in JSON format...`
     };
   }
 
   static investmentEmpowerment(context: InvestmentContext): AIPrompt {
+    const today = new Date().toISOString().split('T')[0];
     return {
       type: 'investment-empowerment',
       prompt: INVESTMENT_EMPOWERMENT_TEMPLATE
@@ -96,6 +118,7 @@ export class PromptBuilder {
         .replace('{experience}', context.experience || 'intermediate')
         .replace('{income}', (context.income || 0).toString())
         .replace('{portfolio}', context.portfolio)
+        .replace('{today}', today)
     };
   }
 }
