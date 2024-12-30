@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, Animated } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -51,8 +51,15 @@ export const HouseholdSelector = ({ value, onSelect }: HouseholdSelectorProps) =
     hasChildren: false
   });
 
-  const [selected, setSelected] = useState<string | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
+  const [selected, setSelected] = useState<string | null>('single');
+  const [showDetails, setShowDetails] = useState(true);
+
+  // Add useEffect to handle initial selection
+  useEffect(() => {
+    if (!value) {
+      handleSelect('single');
+    }
+  }, []);
 
   const handleSelect = (type: string) => {
     setSelected(type);
@@ -69,12 +76,13 @@ export const HouseholdSelector = ({ value, onSelect }: HouseholdSelectorProps) =
     onSelect(newProfile);
   };
 
+  // Modified renderProfileCard to show selection state
   const renderProfileCard = (item: typeof HOUSEHOLD_PROFILES[0]) => (
     <Pressable
       key={item.id}
       style={[
         styles.profileCard,
-        selected === item.id && styles.profileCardSelected
+        (selected === item.id || (!selected && item.id === 'single')) && styles.profileCardSelected
       ]}
       onPress={() => handleSelect(item.id)}
     >
@@ -83,19 +91,19 @@ export const HouseholdSelector = ({ value, onSelect }: HouseholdSelectorProps) =
         <View style={styles.profileInfo}>
           <Text style={[
             styles.profileLabel,
-            selected === item.id && styles.profileLabelSelected
+            (selected === item.id || (!selected && item.id === 'single')) && styles.profileLabelSelected
           ]}>
             {item.label}
           </Text>
           <Text style={[
             styles.profileSublabel,
-            selected === item.id && styles.profileSublabelSelected
+            (selected === item.id || (!selected && item.id === 'single')) && styles.profileSublabelSelected
           ]}>
             {item.sublabel}
           </Text>
         </View>
       </View>
-      {selected === item.id && (
+      {(selected === item.id || (!selected && item.id === 'single')) && (
         <MaterialCommunityIcons 
           name="check-circle" 
           size={20} 

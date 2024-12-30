@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIGoalsResponse, BudgetAnalysisResponse, PromptBuilder } from './prompt';
 
-const AI_KEY = "";
+const AI_KEY = "AIzaSyCp42_RObJYxTLVYbWBPzYmLVfVHPYmr0o";
 
 console.log('AI_KEY:', AI_KEY);
 
