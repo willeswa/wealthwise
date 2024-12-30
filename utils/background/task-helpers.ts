@@ -1,65 +1,89 @@
 import { BackgroundFetchResult } from 'expo-background-fetch';
-import { collectAIAnalysisData, checkAIInsightsEligibility } from '../ai/helpers';
+import { collectAIAnalysisData, checkAIInsightsEligibility, clearOldInsights } from '../ai/helpers';
 import { AIService } from '../ai/service';
 import { getDatabase } from '../db/utils/setup';
 
+// Add a helper function to sanitize AI messages
+function sanitizeMessage(message: string, data: any): string {
+  // Replace common template variables
+  return message
+    .replace(/{budgetData\.savingsRate}%/, `${data.savingsRate.toFixed(1)}%`)
+    .replace(/{budgetData\.monthlyIncome}/, data.monthlyIncome.toString())
+    .replace(/{goal}/, data.goal || 'financial stability')
+    // Add any other template variables that need replacing
+    .replace(/{[^}]+}/g, ''); // Catch any remaining template variables
+}
+
 export async function handleAIAnalysisTask(): Promise<BackgroundFetchResult> {
     try {
+        await clearOldInsights();
+
         const eligibility = await checkAIInsightsEligibility();
         if (!eligibility.eligible) {
             return BackgroundFetchResult.NoData;
         }
 
         const analysisData = await collectAIAnalysisData();
-        const insights = await AIService.analyzeBudget({
-            ...analysisData,
-            country: 'US',
-            goal: 'SAVE_EMERGENCY',
-            debt: JSON.stringify(analysisData.debts),
-            investments: JSON.stringify(analysisData.investments),
-            budgetData: JSON.stringify(analysisData.spendingTrends)
-        });
+        
+        try {
+            const insights = await AIService.analyzeBudget({
+                ...analysisData,
+                country: 'US',
+                goal: 'SAVE_EMERGENCY',
+                debt: JSON.stringify(analysisData.debts),
+                investments: JSON.stringify(analysisData.investments),
+                budgetData: JSON.stringify(analysisData.spendingTrends)
+            });
 
-        const db = getDatabase();
-        await db.execAsync(`
-            INSERT INTO ai_insights (
-                type,
-                title,
-                message,
-                category,
-                amount,
-                impact_score,
-                valid_until,
-                created_at
-            ) VALUES ${insights.insights.map(insight => {
-                // Determine insight type based on icon
-                const type = getInsightType(insight.icon);
-                
-                // Use the category from the AI response or fallback to type
-                const category = insight.category || type;
-                
-                // Extract numeric amount from message if present
-                const amount = extractAmount(insight.message) || null;
-                
-                // Calculate impact score based on color
-                const impactScore = getImpactScore(insight.iconColor || '');
-                
-                return `(
-                    '${type}',
-                    '${insight.title.replace(/'/g, "''")}',
-                    '${insight.message.replace(/'/g, "''")}',
-                    '${category}',
-                    ${amount ? amount : 'NULL'},
-                    ${impactScore},
-                    datetime('now', '+7 days'),
-                    CURRENT_TIMESTAMP
-                )`;
-            }).join(',')}
-        `);
+            if (!insights?.insights?.length) {
+                console.warn('No valid insights generated');
+                return BackgroundFetchResult.NoData;
+            }
 
-        return BackgroundFetchResult.NewData;
+            const db = getDatabase();
+            await db.execAsync('DELETE FROM ai_insights');
+            
+            // Insert new insights with sanitized messages
+            await db.execAsync(`
+                INSERT INTO ai_insights (
+                    type,
+                    title,
+                    message,
+                    category,
+                    amount,
+                    impact_score,
+                    valid_until,
+                    created_at
+                ) VALUES ${insights.insights.map(insight => {
+                    const type = getInsightType(insight.icon);
+                    const category = insight.iconColor || type;
+                    const amount = extractAmount(insight.message) || null;
+                    const impactScore = getImpactScore(insight.iconColor || '');
+                    
+                    // Sanitize the message before storing
+                    const sanitizedMessage = sanitizeMessage(insight.message, analysisData);
+                    
+                    return `(
+                        '${type}',
+                        '${insight.title.replace(/'/g, "''")}',
+                        '${sanitizedMessage.replace(/'/g, "''")}',
+                        '${category}',
+                        ${amount ? amount : 'NULL'},
+                        ${impactScore},
+                        datetime('now', '+7 days'),
+                        CURRENT_TIMESTAMP
+                    )`;
+                }).join(',')}
+            `);
+
+            return BackgroundFetchResult.NewData;
+        } catch (aiError) {
+            console.error('AI Analysis failed:', aiError);
+            // Don't throw, return Failed result instead
+            return BackgroundFetchResult.Failed;
+        }
     } catch (error) {
-        console.error('Error in handleAIAnalysisTask:', error);
+        console.error('Critical error in handleAIAnalysisTask:', error);
         return BackgroundFetchResult.Failed;
     }
 }

@@ -2,6 +2,8 @@ import { AddDebtScreen } from "@/components/add-debt-form";
 import { AddExpenseScreen } from "@/components/add-expense-form";
 import { AddIncomeScreen } from "@/components/add-income-form";
 import { AddInvestmentScreen } from "@/components/add-investment-form";
+import { EditProfileModal } from "./edit-profile-modal";
+import { EditGoalsModal } from "./edit-goals-modal";
 import { useModalStore } from "@/store/modal-store";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -20,7 +22,10 @@ export function ActionModal() {
       <View style={styles.modalContainer}>
         <View style={[
           styles.modalContent,
-          (currentAction === "add-debt" || currentAction === "add-investment") && styles.modalContentTall
+          (currentAction === "add-debt" || 
+           currentAction === "add-investment" ||
+           currentAction === "edit-profile" ||
+           currentAction === "edit-goals") && styles.modalContentTall
         ]}>
           <Pressable style={styles.closeButton} onPress={closeModal}>
             <Text style={styles.closeButtonText}>✕</Text>
@@ -30,6 +35,8 @@ export function ActionModal() {
           {currentAction === "add-expense" && <AddExpenseScreen />}
           {currentAction === "add-debt" && <AddDebtScreen />}
           {currentAction === "add-investment" && <AddInvestmentScreen />}
+          {currentAction === "edit-profile" && <EditProfileModal />}
+          {currentAction === "edit-goals" && <EditGoalsModal />}
         </View>
       </View>
     </Modal>

@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState, useRef } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, Animated, Easing } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, Animated, Easing, ActivityIndicator } from "react-native";
 import { Card } from "./card";
 import { colors } from "../utils/colors";
 import { useBudgetStore } from "@/store/budget-store";
 import { executeAIAnalysis } from '../utils/background/task-manager';
-import { checkAIInsightsEligibility } from '../utils/ai/helpers';
+import { checkAIInsightsEligibility, collectAIAnalysisData } from '../utils/ai/helpers';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const FINANCE_COLORS = {
@@ -34,17 +34,58 @@ interface Props {
   onOptimize?: () => void;
 }
 
+// Add loading messages based on context
+const ANALYSIS_MESSAGES = {
+  default: [
+    "Analyzing your financial patterns...",
+    "Reviewing your spending habits...",
+    "Preparing personalized insights..."
+  ],
+  highDebt: [
+    "Analyzing debt reduction opportunities...",
+    "Calculating optimal repayment strategies...",
+    "Finding ways to reduce interest costs..."
+  ],
+  investment: [
+    "Evaluating investment performance...",
+    "Analyzing market opportunities...",
+    "Reviewing portfolio allocation..."
+  ],
+  savings: [
+    "Identifying saving opportunities...",
+    "Analyzing spending patterns...",
+    "Calculating potential savings targets..."
+  ],
+  overspending: [
+    "Reviewing expense patterns...",
+    "Finding cost-cutting opportunities...",
+    "Analyzing budget optimization options..."
+  ]
+};
+
 export const AIBudgetInsights = ({ onOptimize }: Props) => {
   const { aiInsights, fetchLatestInsights } = useBudgetStore();
   const [checking, setChecking] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const [analysisData, setAnalysisData] = useState<any>(null);
   
   // Updated animation values
   const slideAnim = useRef(new Animated.Value(-15)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.97)).current;
 
+  console.log('AI insights:', aiInsights);
+
   useEffect(() => {
     checkAndUpdateInsights();
+    
+    // Refresh every 5 minutes if the app is open
+    const refreshInterval = setInterval(() => {
+      checkAndUpdateInsights();
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(refreshInterval);
   }, []);
 
   // Enhanced animation sequence
@@ -84,16 +125,33 @@ export const AIBudgetInsights = ({ onOptimize }: Props) => {
     }
   }, [aiInsights]);
 
+  // Add useEffect for rotating loading messages
+  useEffect(() => {
+    if (checking) {
+      const messageRotation = setInterval(() => {
+        setLoadingMessageIndex(current => 
+          (current + 1) % ANALYSIS_MESSAGES.default.length
+        );
+      }, 3000); // Rotate every 3 seconds
+
+      return () => clearInterval(messageRotation);
+    }
+  }, [checking]);
+
   const checkAndUpdateInsights = async () => {
     try {
       setChecking(true);
       const eligibility = await checkAIInsightsEligibility();
-      console.log(eligibility)
+      
       if (eligibility.eligible) {
+        // Collect analysis data first
+        const data = await collectAIAnalysisData();
+        setAnalysisData(data);
         await executeAIAnalysis();
       }
       
       await fetchLatestInsights();
+      setLastRefresh(new Date());
     } catch (error) {
       console.error('Error checking/updating insights:', error);
     } finally {
@@ -101,13 +159,61 @@ export const AIBudgetInsights = ({ onOptimize }: Props) => {
     }
   };
 
+  const getContextualLoadingMessages = () => {
+    if (!analysisData) return ANALYSIS_MESSAGES.default;
+
+    const { debts, investments, savingsRate, spendingTrends } = analysisData;
+    
+    if (debts?.length > 0) {
+      return ANALYSIS_MESSAGES.highDebt;
+    }
+    if (investments?.length > 0) {
+      return ANALYSIS_MESSAGES.investment;
+    }
+    if (savingsRate < 10) {
+      return ANALYSIS_MESSAGES.savings;
+    }
+    if (spendingTrends?.currentMonth?.length > 0) {
+      return ANALYSIS_MESSAGES.overspending;
+    }
+    return ANALYSIS_MESSAGES.default;
+  };
+
+  // Show loading state with header
+  if (checking) {
+    const messages = getContextualLoadingMessages();
+    return (
+      <Card style={styles.innerContainer}>
+        <LinearGradient
+          colors={['rgba(37, 99, 235, 0.08)', 'rgba(37, 99, 235, 0)']}
+          style={styles.headerGradient}
+        >
+          <View style={styles.header}>
+            <View style={styles.titleContainer}>
+              <Ionicons name="sparkles" size={24} color={FINANCE_COLORS.accent} />
+              <Text style={styles.title}>AI Insights</Text>
+            </View>
+            <Text style={styles.subtitle}>Personalized financial recommendations</Text>
+          </View>
+        </LinearGradient>
+        
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color={FINANCE_COLORS.accent} />
+          <Text style={styles.loadingText}>
+            {messages[loadingMessageIndex]}
+          </Text>
+        </View>
+      </Card>
+    );
+  }
+
   // Transform AI insights to component format
   const formattedInsights = aiInsights.map(insight => ({
     icon: getIconForInsightType(insight.type),
     title: insight.title,
     message: insight.message,
-    iconColor: getColorForImpact(insight.impact_score),
-    iconBackground: getBackgroundForImpact(insight.impact_score),
+    iconColor: getCategoryColor(insight.type),
+    iconBackground: getCategoryBackground(insight.type),
   }));
 
   if (!formattedInsights.length) {
@@ -183,16 +289,30 @@ function getIconForInsightType(type: string): keyof typeof Ionicons.glyphMap {
   }
 }
 
-function getColorForImpact(score: number) {
-  if (score >= 8) return FINANCE_COLORS.impactColors.high;
-  if (score >= 5) return FINANCE_COLORS.impactColors.medium;
-  return FINANCE_COLORS.impactColors.low;
+function getCategoryColor(category: string) {
+  switch (category.toLowerCase()) {
+    case 'urgent':
+      return FINANCE_COLORS.impactColors.high;
+    case 'optimization':
+      return FINANCE_COLORS.impactColors.medium;
+    case 'growth':
+      return FINANCE_COLORS.impactColors.low;
+    default:
+      return FINANCE_COLORS.impactColors.medium;
+  }
 }
 
-function getBackgroundForImpact(score: number) {
-  if (score >= 8) return FINANCE_COLORS.impactBackgrounds.high;
-  if (score >= 5) return FINANCE_COLORS.impactBackgrounds.medium;
-  return FINANCE_COLORS.impactBackgrounds.low;
+function getCategoryBackground(category: string) {
+  switch (category.toLowerCase()) {
+    case 'urgent':
+      return FINANCE_COLORS.impactBackgrounds.high;
+    case 'optimization':
+      return FINANCE_COLORS.impactBackgrounds.medium;
+    case 'growth':
+      return FINANCE_COLORS.impactBackgrounds.low;
+    default:
+      return FINANCE_COLORS.impactBackgrounds.medium;
+  }
 }
 
 const styles = StyleSheet.create({
@@ -263,5 +383,15 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     lineHeight: 20,
     letterSpacing: -0.2,
-  }
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: colors.text.secondary,
+  },
 });

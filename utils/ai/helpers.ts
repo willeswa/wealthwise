@@ -56,6 +56,19 @@ interface AIAnalysisData {
   }[];
 }
 
+export async function clearOldInsights(): Promise<void> {
+  const db = getDatabase();
+  try {
+    await db.execAsync(`
+      DELETE FROM ai_insights 
+      WHERE created_at < datetime('now', '-1 day')
+      OR valid_until < datetime('now')
+    `);
+  } catch (error) {
+    console.error('Error clearing old insights:', error);
+  }
+}
+
 export async function checkAIInsightsEligibility(): Promise<EligibilityResult> {
   const db = getDatabase();
 

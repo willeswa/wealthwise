@@ -1,5 +1,5 @@
-import { FinancialGoal } from '../types/preferences';
-import { ADVICE_TEMPLATE, BUDGET_ANALYSIS_TEMPLATE, GOALS_TEMPLATE } from './templates';
+import { FinancialGoal, HouseholdProfile } from '../types/preferences';
+import { ADVICE_TEMPLATE, BUDGET_ANALYSIS_TEMPLATE, GOALS_TEMPLATE, INVESTMENT_EMPOWERMENT_TEMPLATE, INVESTMENT_INFO_TEMPLATE } from './templates';
 
 // Add new interface for budget insights
 export interface BudgetAnalysisResponse {
@@ -21,15 +21,19 @@ export interface AIPrompt {
   prompt: string;
 }
 
+interface InvestmentContext {
+  country: string;
+  goal?: string;
+  riskLevel: string;
+  experience?: string;
+  income?: number;
+  portfolio: string;
+}
+
 export class PromptBuilder {
   static goals(
     countryCode: string,
-    householdProfile?: {
-      composition: 'single' | 'couple' | 'family';
-      size: number;
-      primaryAge: number;
-      hasChildren: boolean;
-    }
+    householdProfile?: HouseholdProfile
   ): AIPrompt {
     let prompt = GOALS_TEMPLATE.replaceAll('{country}', countryCode);
     
@@ -69,6 +73,29 @@ export class PromptBuilder {
         .replace('{debt}', params.debt)
         .replace('{investments}', params.investments)
         .replace('{budgetData}', params.budgetData)
+    };
+  }
+
+  static investmentInfo(context: Pick<InvestmentContext, 'country' | 'riskLevel' | 'portfolio'>): AIPrompt {
+    return {
+      type: 'investment-info',
+      prompt: INVESTMENT_INFO_TEMPLATE
+        .replace('{country}', context.country)
+        .replace('{riskLevel}', context.riskLevel)
+        .replace('{portfolio}', context.portfolio)
+    };
+  }
+
+  static investmentEmpowerment(context: InvestmentContext): AIPrompt {
+    return {
+      type: 'investment-empowerment',
+      prompt: INVESTMENT_EMPOWERMENT_TEMPLATE
+        .replace('{country}', context.country)
+        .replace('{goal}', context.goal || 'general growth')
+        .replace('{riskLevel}', context.riskLevel)
+        .replace('{experience}', context.experience || 'intermediate')
+        .replace('{income}', (context.income || 0).toString())
+        .replace('{portfolio}', context.portfolio)
     };
   }
 }

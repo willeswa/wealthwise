@@ -1,58 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, Animated } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-
-interface HouseholdProfile {
-  composition: 'single' | 'couple' | 'family';
-  size: number;
-  primaryAge: number;
-  hasChildren: boolean;
-}
+import { HouseholdProfile, HouseholdSizeRange, HOUSEHOLD_PROFILES } from '../utils/types/preferences';
 
 interface HouseholdSelectorProps {
   value: HouseholdProfile | null;
   onSelect: (profile: HouseholdProfile) => void;
+  showDetails?: boolean; // Add this prop
 }
 
-const HOUSEHOLD_PROFILES = [
-  {
-    id: 'single',
-    label: 'Single',
-    sublabel: 'Just me',
-    icon: 'account',
-    illustration: '👤',
-    ages: ['18-24', '25-34', '35-44', '45-54', '55+'],
-  },
-  {
-    id: 'couple',
-    label: 'Couple',
-    sublabel: 'Me & Partner',
-    icon: 'account-multiple',
-    illustration: '👥',
-    ages: ['25-34', '35-44', '45-54', '55+'],
-  },
-  {
-    id: 'family',
-    label: 'Family',
-    sublabel: 'With Children',
-    icon: 'account-group',
-    illustration: '👨‍👩‍👧‍👦',
-    sizes: ['3-4', '5-6', '7+'],
-    ages: ['25-34', '35-44', '45-54', '55+'],
-  }
-];
-
-export const HouseholdSelector = ({ value, onSelect }: HouseholdSelectorProps) => {
+export const HouseholdSelector = ({ value, onSelect, showDetails = false }: HouseholdSelectorProps) => {
   const [profile, setProfile] = useState<HouseholdProfile>(value || {
     composition: 'single',
-    size: 1,
+    size: '1',
     primaryAge: 25,
     hasChildren: false
   });
 
-  const [selected, setSelected] = useState<string | null>('single');
-  const [showDetails, setShowDetails] = useState(true);
+  const [selected, setSelected] = useState<string | null>(value?.composition || 'single');
+  const [showDetailsPanel, setShowDetailsPanel] = useState(showDetails); // Rename to avoid confusion
 
   // Add useEffect to handle initial selection
   useEffect(() => {
@@ -62,11 +28,17 @@ export const HouseholdSelector = ({ value, onSelect }: HouseholdSelectorProps) =
   }, []);
 
   const handleSelect = (type: string) => {
+    const profileData = HOUSEHOLD_PROFILES.find(p => p.id === type);
+    if (!profileData) return;
+
     setSelected(type);
-    setShowDetails(true);
+    setShowDetailsPanel(true);
+    
+    // Use the profile data to set initial values
     handleUpdate({
       composition: type as HouseholdProfile['composition'],
-      size: type === 'single' ? 1 : type === 'couple' ? 2 : 3
+      size: type === 'single' ? '1' : type === 'couple' ? '2' : '3-4',  // Default size based on composition
+      primaryAge: parseAgeGroup(profileData.ages[1]) // Default to second age group
     });
   };
 
@@ -82,7 +54,7 @@ export const HouseholdSelector = ({ value, onSelect }: HouseholdSelectorProps) =
       key={item.id}
       style={[
         styles.profileCard,
-        (selected === item.id || (!selected && item.id === 'single')) && styles.profileCardSelected
+        selected === item.id && styles.profileCardSelected
       ]}
       onPress={() => handleSelect(item.id)}
     >
@@ -91,19 +63,19 @@ export const HouseholdSelector = ({ value, onSelect }: HouseholdSelectorProps) =
         <View style={styles.profileInfo}>
           <Text style={[
             styles.profileLabel,
-            (selected === item.id || (!selected && item.id === 'single')) && styles.profileLabelSelected
+            selected === item.id && styles.profileLabelSelected
           ]}>
             {item.label}
           </Text>
           <Text style={[
             styles.profileSublabel,
-            (selected === item.id || (!selected && item.id === 'single')) && styles.profileSublabelSelected
+            selected === item.id && styles.profileSublabelSelected
           ]}>
             {item.sublabel}
           </Text>
         </View>
       </View>
-      {(selected === item.id || (!selected && item.id === 'single')) && (
+      {selected === item.id && (
         <MaterialCommunityIcons 
           name="check-circle" 
           size={20} 
@@ -143,31 +115,38 @@ export const HouseholdSelector = ({ value, onSelect }: HouseholdSelectorProps) =
           </View>
         </View>
 
-        {selected === 'family' && (
-          <View style={styles.sizeSection}>
-            <Text style={styles.sectionLabel}>Household Size</Text>
-            <View style={styles.optionsGrid}>
-              {selectedProfile.sizes?.map((size) => (
-                <Pressable
-                  key={size}
-                  style={[
-                    styles.optionButton,
-                    size === getSizeGroup(profile.size) && styles.optionSelected
-                  ]}
-                  onPress={() => handleUpdate({ size: parseSizeGroup(size) })}
-                >
-                  <Text style={[
-                    styles.optionText,
-                    size === getSizeGroup(profile.size) && styles.optionTextSelected
-                  ]}>
-                    {size} people
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        )}
+        {selected === 'family' && renderSizeOptions()}
       </Animated.View>
+    );
+  };
+
+  const renderSizeOptions = () => {
+    const selectedProfile = HOUSEHOLD_PROFILES.find(p => p.id === selected);
+    if (!selectedProfile || !selectedProfile.sizes) return null;
+
+    return (
+      <View style={styles.sizeSection}>
+        <Text style={styles.sectionLabel}>Household Size</Text>
+        <View style={styles.optionsGrid}>
+          {selectedProfile.sizes.map((size) => (
+            <Pressable
+              key={size}
+              style={[
+                styles.optionButton,
+                profile.size === size && styles.optionSelected
+              ]}
+              onPress={() => handleUpdate({ size })}
+            >
+              <Text style={[
+                styles.optionText,
+                profile.size === size && styles.optionTextSelected
+              ]}>
+                {size} {size === '1' ? 'person' : 'people'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
     );
   };
 
@@ -179,7 +158,7 @@ export const HouseholdSelector = ({ value, onSelect }: HouseholdSelectorProps) =
           {HOUSEHOLD_PROFILES.map(renderProfileCard)}
         </View>
         
-        {showDetails && (
+        {showDetailsPanel && (
           <View style={styles.detailsContainer}>
             {renderDetails()}
           </View>
@@ -306,17 +285,6 @@ const getAgeGroup = (age: number): string => {
 };
 
 const parseAgeGroup = (group: string): number => {
-  const [min] = group.split('-');
-  return parseInt(min);
-};
-
-const getSizeGroup = (size: number): string => {
-  if (size <= 4) return '3-4';
-  if (size <= 6) return '5-6';
-  return '7+';
-};
-
-const parseSizeGroup = (group: string): number => {
   const [min] = group.split('-');
   return parseInt(min);
 };

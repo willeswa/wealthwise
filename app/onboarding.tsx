@@ -1,5 +1,5 @@
 import { CountryDropdown } from '@/components/CountryDropdown';
-import { FinancialGoal } from '@/utils/types/preferences';
+import { AIService } from '@/utils/ai/service';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Redirect, router } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -15,12 +15,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AiPreferencesSelector } from '../components/AiPreferencesSelector';
 import { Button } from '../components/Button';
 import { GoalSelector } from '../components/GoalSelector';
+import { HouseholdSelector } from '../components/HouseholdSelector';
 import { ProgressDots } from '../components/ProgressDots';
 import { usePreferencesStore } from '../store/preferences-store';
 import { getCountryInfo, getCountryOptions, getUserCountry } from '../utils/constants/countries';
 import { getQuoteForStep } from '../utils/constants/quotes';
-import { AIService } from '@/utils/ai/service';
-import { HouseholdSelector } from '../components/HouseholdSelector';
+import { FinancialGoal, HouseholdProfile } from '../utils/types/preferences';
 
 export const ONBOARDING_STEPS = [
   {
@@ -65,12 +65,7 @@ interface OnboardingState {
   currency: string;
   primaryGoal: FinancialGoal | null;
   aiEnabled: boolean | null;
-  householdProfile: {
-    composition: 'single' | 'couple' | 'family';
-    size: number;
-    primaryAge: number;
-    hasChildren: boolean;
-  } | null;
+  householdProfile: HouseholdProfile | null;
 }
 
 export default function Onboarding() {
