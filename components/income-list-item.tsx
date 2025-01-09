@@ -6,6 +6,7 @@ import { Swipeable } from "react-native-gesture-handler";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { colors } from "../utils/colors";
 import { formatCurrency } from "../utils/format";
+import { AmountCurrencyView } from "./amount-currency-view";
 
 type IncomeListItemProps = {
   id: number;
@@ -69,9 +70,11 @@ export const IncomeListItem = ({
               <Text style={styles.frequency}>{frequency}</Text>
             </View>
           </View>
-          <Text style={styles.amount}>
-            {formatCurrency(amount, currency)}
-          </Text>
+      <AmountCurrencyView
+        amount={amount}
+        currency={currency}
+        style={styles.amount}
+      />
         </View>
       </View>
     </Swipeable>
@@ -119,8 +122,7 @@ const styles = StyleSheet.create({
   },
   amount: {
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.accent,
+    fontWeight: '300',
   },
   rightActions: {
     flexDirection: 'row',

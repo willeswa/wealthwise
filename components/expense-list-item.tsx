@@ -7,6 +7,7 @@ import { Pressable, Swipeable } from "react-native-gesture-handler";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { colors } from "../utils/colors";
 import { formatCurrency } from "../utils/format";
+import { AmountCurrencyView } from "./amount-currency-view";
 
 type ExpenseListItemProps = {
   id: string;
@@ -116,9 +117,11 @@ export const ExpenseListItem = ({
           </View>
           
           <View style={styles.rightSection}>
-            <Text style={styles.amount}>
-              {formatCurrency(amount, currency)}
-            </Text>
+            <AmountCurrencyView
+              amount={amount}
+              currency={currency ?? "USD"}
+              style={styles.amount}
+            />
             <View style={styles.statusContainer}>
               <View style={[
                 styles.statusDot,
@@ -140,14 +143,15 @@ export const ExpenseListItem = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
     backgroundColor: colors.background.main,
   },
   mainContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginLeft: 8
   },
   leftSection: {
     flex: 1,
@@ -159,14 +163,14 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'light',
     color: colors.text.primary,
     marginBottom: 2,
     flex: 1
   },
   description: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: 'light',
     color: colors.text.primary,
     marginBottom: 2,
   },
@@ -191,7 +195,7 @@ const styles = StyleSheet.create({
   },
   amount: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: 'light',
     color: colors.text.primary,
   },
   tagContainer: {
@@ -238,7 +242,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: 'light',
   },
   paidDot: {
     backgroundColor: colors.success,
@@ -254,36 +258,4 @@ const styles = StyleSheet.create({
   },
 });
 
-// Helper function to get category emoji
-const getCategoryEmoji = (category: string): string => {
-  const emojiMap: Record<string, string> = {
-    Food: '🍔',
-    Transport: '🚗',
-    Bills: '📄',
-    Housing: '🏠',
-    Education: '📚',
-    Healthcare: '🏥',
-    Entertainment: '🎮',
-    Shopping: '🛍️',
-    Travel: '✈️',
-    // Add more mappings as needed
-  };
-  return emojiMap[category] || '💰';
-};
 
-// Helper function to get category icon
-const getCategoryIcon = (category: string): keyof typeof Ionicons.glyphMap => {
-  const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
-    Food: 'fast-food-outline',
-    Transport: 'car-outline',
-    Bills: 'receipt-outline',
-    Rent: 'home-outline',
-    Education: 'school-outline',
-    Healthcare: 'medical-outline',
-    Entertainment: 'game-controller-outline',
-    Shopping: 'cart-outline',
-    Travel: 'airplane-outline',
-    // Add more mappings as needed
-  };
-  return iconMap[category] || 'cart-outline';
-};

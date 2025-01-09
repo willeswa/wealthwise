@@ -21,6 +21,7 @@ import { Dropdown, DropdownOption } from "./Dropdown";
 import { CurrencyType, Numpad } from "./Numpad";
 import { ScrollIndicator } from "./scroll-indicator";
 import { NoDebtsSetup } from "./no-debts-setup";
+import { usePreferencesStore } from "@/store/preferences-store";
 
 const CURRENCIES: CurrencyType[] = [
   { symbol: "$", code: "USD", name: "US Dollar" },
@@ -44,10 +45,6 @@ export const AddExpenseScreen = () => {
   const [amount, setAmount] = useState("");
   const [comment, setComment] = useState("");
   const [name, setName] = useState("");
-  const [currency, setCurrency] = useState<CurrencyType>(() => {
-    // Initialize with default currency or fallback to USD
-    return CURRENCIES.find((c) => c.code === defaultCurrency) || CURRENCIES[0];
-  });
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const commentInputRef = useRef<TextInput>(null);
   const [date, setDate] = useState(new Date());
@@ -64,7 +61,6 @@ export const AddExpenseScreen = () => {
   } | null>(null);
   const [showLinkedItemPicker, setShowLinkedItemPicker] = useState(false);
   const [showDebtSetup, setShowDebtSetup] = useState(false);
-
   const scrollY = React.useRef(new Animated.Value(0)).current;
   const [isScrolling, setIsScrolling] = useState(false);
   const scrollEndTimer = useRef<NodeJS.Timeout>();
@@ -197,7 +193,7 @@ export const AddExpenseScreen = () => {
       const expenseData = {
         name: name.trim(),
         amount: numericAmount,
-        currency: currency.code,
+        currency: defaultCurrency,
         category_id: selectedCategory.id,
         category_name: selectedCategory.name,
         linked_item_id: selectedLinkedItem?.id,
@@ -230,11 +226,9 @@ export const AddExpenseScreen = () => {
   };
 
   const selectCurrency = async (newCurrency: CurrencyType) => {
-    if (newCurrency.code === currency.code) return;
-
+    if (newCurrency.code === defaultCurrency) return;
     try {
       await updateDefaultCurrency(newCurrency.code);
-      setCurrency(newCurrency);
     } catch (error) {
       console.error("Error updating currency:", error);
     }

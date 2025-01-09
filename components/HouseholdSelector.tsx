@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Pressable, Animated } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, Text, View, Pressable, Animated, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { HouseholdProfile, HouseholdSizeRange, HOUSEHOLD_PROFILES } from '../utils/types/preferences';
 
@@ -19,6 +19,7 @@ export const HouseholdSelector = ({ value, onSelect, showDetails = false }: Hous
 
   const [selected, setSelected] = useState<string | null>(value?.composition || 'single');
   const [showDetailsPanel, setShowDetailsPanel] = useState(showDetails); // Rename to avoid confusion
+  const scrollViewRef = useRef<ScrollView>(null); // Add reference to ScrollView
 
   // Add useEffect to handle initial selection
   useEffect(() => {
@@ -26,6 +27,13 @@ export const HouseholdSelector = ({ value, onSelect, showDetails = false }: Hous
       handleSelect('single');
     }
   }, []);
+
+  // Add useEffect to scroll to bottom when family is selected
+  useEffect(() => {
+    if (selected === 'family' && scrollViewRef.current) {
+      scrollViewRef.current.scrollToEnd({ animated: true });
+    }
+  }, [selected]);
 
   const handleSelect = (type: string) => {
     const profileData = HOUSEHOLD_PROFILES.find(p => p.id === type);
@@ -49,7 +57,7 @@ export const HouseholdSelector = ({ value, onSelect, showDetails = false }: Hous
   };
 
   // Modified renderProfileCard to show selection state
-  const renderProfileCard = (item: typeof HOUSEHOLD_PROFILES[0]) => (
+  const renderProfileCard = (item: typeof HOUSEHOLD_PROFILES[number]) => (
     <Pressable
       key={item.id}
       style={[
@@ -122,8 +130,8 @@ export const HouseholdSelector = ({ value, onSelect, showDetails = false }: Hous
 
   const renderSizeOptions = () => {
     const selectedProfile = HOUSEHOLD_PROFILES.find(p => p.id === selected);
-    if (!selectedProfile || !selectedProfile.sizes) return null;
-
+    if (!selectedProfile || !('sizes' in selectedProfile)) return null;
+  
     return (
       <View style={styles.sizeSection}>
         <Text style={styles.sectionLabel}>Household Size</Text>
@@ -151,7 +159,7 @@ export const HouseholdSelector = ({ value, onSelect, showDetails = false }: Hous
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView ref={scrollViewRef} style={styles.container}>
       <Text style={styles.helpText}>Who are you planning for?</Text>
       <View style={styles.contentWrapper}>
         <View style={styles.profilesContainer}>
@@ -164,7 +172,7 @@ export const HouseholdSelector = ({ value, onSelect, showDetails = false }: Hous
           </View>
         )}
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -172,6 +180,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
+    borderRadius: 25,
+    paddingVertical: 16,
   },
   helpText: {
     fontSize: 16,

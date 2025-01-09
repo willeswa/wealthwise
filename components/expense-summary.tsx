@@ -7,6 +7,7 @@ import { colors } from '../utils/colors';
 import { formatCurrency } from "../utils/format";
 import { EmptyState } from "./empty-state";
 import { router } from "expo-router";
+import { AmountCurrencyView } from "./amount-currency-view";
 
 type Props = {
   expenses: Array<Expense>;
@@ -93,9 +94,11 @@ export const ExpenseSummary = ({ expenses, totalIncome, loading, error, defaultC
           <View key={category} style={styles.categoryItem}>
             <View style={styles.categoryHeader}>
               <Text style={styles.categoryName}>{category}</Text>
-              <Text style={styles.categoryAmount}>
-                {formatCurrency(amount, defaultCurrency)}
-              </Text>
+              <AmountCurrencyView 
+                amount={amount} 
+                currency={defaultCurrency} 
+                style={styles.categoryAmount}
+                />
             </View>
             <View style={styles.categoryDetails}>
               <View style={styles.categoryBarContainer}>
@@ -136,9 +139,11 @@ export const ExpenseSummary = ({ expenses, totalIncome, loading, error, defaultC
               style={styles.icon}
             />
             <View style={styles.largestExpenseDetails}>
-              <Text style={styles.expenseAmount}>
-                {formatCurrency(largestExpense.amount, defaultCurrency)}
-              </Text>
+              <AmountCurrencyView
+                amount={largestExpense.amount}
+                currency={defaultCurrency}
+                style={styles.expenseAmount}
+                />
               <Text style={styles.expenseCategory}>
                 {largestExpense.category_name}
               </Text>

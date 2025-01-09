@@ -144,8 +144,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.background.highlight,
+
   },
   title: {
     fontSize: 16,

@@ -8,6 +8,7 @@ import { useModalStore } from "@/store/modal-store";
 import { formatCurrency } from "@/utils/format";
 import { colors } from "@/utils/colors";
 import { Investment } from "@/utils/types/investment";
+import { usePreferencesStore } from "@/store/preferences-store";
 
 const width = Dimensions.get("window").width;
 const CARD_WIDTH = width * 0.4;
@@ -28,7 +29,7 @@ const MetricCard = ({ label, value, icon, color }: {
 );
 
 const InvestmentCard = ({ investment }: { investment: Investment }) => {
-  
+  const {currency} = usePreferencesStore();
   return (
     <View style={styles.investmentCard}>
       <View style={styles.investmentHeader}>
@@ -40,7 +41,7 @@ const InvestmentCard = ({ investment }: { investment: Investment }) => {
       <Text style={styles.investmentName} numberOfLines={1}>{investment.name}</Text>
       <View style={styles.investmentMetrics}>
         <Text style={styles.investmentValue}>
-          {formatCurrency(investment.current_value, 'KES')}
+          {formatCurrency(investment.current_value, currency)}
         </Text>
         <View style={styles.liquidityPill}>
           <Text style={styles.liquidityText}>{investment.liquidity}</Text>

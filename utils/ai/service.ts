@@ -5,7 +5,7 @@ import { HouseholdProfile } from '../types/preferences';
 import { AIGoalsResponse, BudgetAnalysisResponse, InvestmentContext, PromptBuilder } from './prompt';
 import { searchFinancialNews } from './search';
 
-const AI_KEY = "";
+const AI_KEY = "AIzaSyAfZ_zvG6WlLhQLS7ATCwhwiiIh1ArVx0E";
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second delay between retries
 

@@ -16,6 +16,7 @@ import { colors } from "../utils/colors";
 import { formatCurrency } from "../utils/format";
 import { Legend } from "./legend";
 import { router } from "expo-router";
+import { AmountCurrencyView } from "./amount-currency-view";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CHART_WIDTH = Math.min(SCREEN_WIDTH - 64, 300);
@@ -27,6 +28,11 @@ export const BudgetSummary = () => {
   useEffect(() => {
     fetchSummary();
   }, []);
+
+
+  if(!summary || (summary.totalExpenses < 1 || summary.totalIncome < 1)){
+    return null
+  }
 
   if (error) {
     return <Text style={styles.error}>{error}</Text>;
@@ -86,15 +92,14 @@ export const BudgetSummary = () => {
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Total Budget</Text>
-          <Text style={styles.statValue}>
-            {formatCurrency(summary.totalIncome, defaultCurrency)}
-          </Text>
+          <AmountCurrencyView style={styles.statValue} currency={defaultCurrency} amount={summary.totalIncome}  />
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Spent</Text>
-          <Text style={styles.statValue}>
-            {formatCurrency(summary.totalExpenses, defaultCurrency)}
-          </Text>
+          <AmountCurrencyView
+            style={styles.statValue}
+            currency={defaultCurrency}
+            amount={summary.totalExpenses}/>
         </View>
       </View>
       <View style={styles.chartSection}>
@@ -108,9 +113,11 @@ export const BudgetSummary = () => {
             innerRadius={CHART_RADIUS * 0.65}
             centerLabelComponent={() => (
               <View style={styles.centerLabel}>
-                <Text style={styles.centerAmount}>
-                  {formatCurrency(summary.unallocatedAmount, defaultCurrency)}
-                </Text>
+
+                <AmountCurrencyView
+                  amount={summary.unallocatedAmount}
+                  currency={defaultCurrency}
+                  style={styles.centerAmount}/>
                 <Text style={styles.centerText}>
                   {summary.unallocatedAmount > 0 ? `Unallocated` : `Overspent`}
                 </Text>
@@ -185,7 +192,6 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 16,
-    fontWeight: "600",
     color: colors.text.primary,
   },
   categoriesContainer: {

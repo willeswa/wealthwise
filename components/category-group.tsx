@@ -5,6 +5,7 @@ import { colors } from "../utils/colors";
 import { formatCurrency } from "../utils/format";
 import { ExpenseListItem } from "./expense-list-item";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import { AmountCurrencyView } from "./amount-currency-view";
 
 interface CategoryGroupProps {
   category: string;
@@ -43,9 +44,12 @@ export const CategoryGroup = ({
           />
           <Text style={styles.title}>{category}</Text>
         </View>
-        <Text style={styles.total}>
-          {formatCurrency(total, currency)}
-        </Text>
+       
+        <AmountCurrencyView
+          amount={total}
+          currency={currency}
+          style={styles.total}
+          />
       </TouchableOpacity>
 
       {isExpanded && (
@@ -84,8 +88,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
     backgroundColor: colors.background.highlight,
     borderRadius: 8,
   },
@@ -102,7 +106,7 @@ const styles = StyleSheet.create({
   total: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.accent,
+    color: colors.text.light,
   },
   content: {
     gap: 1,

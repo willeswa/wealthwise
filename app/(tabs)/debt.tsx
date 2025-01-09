@@ -31,7 +31,7 @@ const DebtSummaryCards = () => {
   const insights = [
     {
       icon: "wallet-outline" as const,
-      value: `${defaultCurrency} ${summary.totalOutstanding.toLocaleString()}`,
+      value: `${formatCurrency(summary.totalOutstanding, defaultCurrency)}`,
       label: "Total Debt",
       color: colors.warning,
       bgColor: colors.background.warning,
