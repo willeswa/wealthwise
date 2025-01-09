@@ -1,19 +1,30 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { usePreferencesStore } from '../../store/preferences-store';
 import { InvestmentInsight } from '../types/investment';
 import { HouseholdProfile } from '../types/preferences';
 import { AIGoalsResponse, BudgetAnalysisResponse, InvestmentContext, PromptBuilder } from './prompt';
 import { searchFinancialNews } from './search';
+import { AIClient, GoogleAIClient, OpenAIClient } from './aiClients';
 
-const AI_KEY = "AIzaSyAfZ_zvG6WlLhQLS7ATCwhwiiIh1ArVx0E";
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second delay between retries
 
-let aiClient: GoogleGenerativeAI;
+let aiClient: AIClient;
 
-if (AI_KEY) {
-  aiClient = new GoogleGenerativeAI(AI_KEY);
-}
+const initializeAIClient = (provider: 'google' | 'openai') => {
+  switch (provider) {
+    case 'google':
+      aiClient = new GoogleAIClient();
+      break;
+    case 'openai':
+      aiClient = new OpenAIClient();
+      break;
+    default:
+      throw new Error('Unsupported AI provider');
+  }
+};
+
+// Initialize with default provider
+initializeAIClient('google');
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -90,8 +101,7 @@ class AIService {
         throw new Error('AI client not initialized');
     }
     try {
-      const model = aiClient.getGenerativeModel({ model: "gemini-pro" });
-      const result = await model.generateContent(prompt);
+      const result = await aiClient.generateContent(prompt);
       return result.response;
     } catch (error) {
       console.error('AI Generation Error:', error);
@@ -217,7 +227,7 @@ class AIService {
 
   private static buildSearchQueries(portfolio: any[], country: string): string[] {
     const queries = [];
-    const portfolioData = JSON.parse(portfolio);
+    const portfolioData = Array.isArray(portfolio) ? portfolio : JSON.parse(portfolio);
     
     // Group investments by type
     const investmentTypes = new Set(portfolioData.map((inv: any) => inv.type));
@@ -245,7 +255,8 @@ class AIService {
       const { country } = usePreferencesStore.getState();
       
       // Generate targeted search queries
-      const searchQueries = this.buildSearchQueries(context.portfolio, country);
+      const portfolioArray = JSON.parse(context.portfolio);
+      const searchQueries = this.buildSearchQueries(portfolioArray, country);
 
       
       // Get relevant news for each query
@@ -305,4 +316,4 @@ class AIService {
   }
 }
 
-export { AIService };
+export { AIService, initializeAIClient };

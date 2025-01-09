@@ -55,6 +55,8 @@ interface AIAnalysisData {
     spent: number;
     type: string;
   }[];
+  country: string;
+  goal: string;
 }
 
 export async function clearOldInsights(): Promise<void> {
