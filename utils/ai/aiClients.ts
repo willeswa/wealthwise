@@ -9,7 +9,7 @@ export class GoogleAIClient implements AIClient {
   private client: GoogleGenerativeAI;
 
   constructor() {
-    const AI_KEY = "";
+    const AI_KEY = "AIzaSyAfZ_zvG6WlLhQLS7ATCwhwiiIh1ArVx0E";
     this.client = new GoogleGenerativeAI(AI_KEY);
   }
 

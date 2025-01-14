@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import CountryFlag from "react-native-country-flag";
-import { Dropdown } from './Dropdown';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CountryInfo } from '../utils/constants/countries';
+import { CountryModal } from './CountryModal';
 
 interface CountryDropdownProps {
   value: string;
@@ -21,18 +22,7 @@ export const CountryDropdown = ({
   onSelect,
   showLabels = true, // Default to true for backward compatibility
 }: CountryDropdownProps) => {
-  const dropdownOptions = options.map(country => ({
-    label: country.name,
-    value: country.code
-  }));
-
-  const renderFlag = (option: { value: string }) => (
-    <CountryFlag
-      isoCode={option.value}
-      size={20}
-      style={styles.flag}
-    />
-  );
+  const selectedCountry = options.find(c => c.code === value);
 
   return (
     <View style={styles.container}>
@@ -44,24 +34,35 @@ export const CountryDropdown = ({
           </Text>
         </>
       )}
-      <Dropdown
-        label="Country"
-        value={value}
-        options={dropdownOptions}
-        showPicker={showPicker}
+
+      <Pressable
+        style={styles.selector}
         onPress={onPress}
-        onSelect={(option) => {
-          const country = options.find(c => c.code === option.value);
-          if (country) {
-            onSelect(country);
-          }
-        }}
-        renderIcon={renderFlag}
-        placeholder="Choose your country"
-        containerStyle={[
-          styles.dropdown,
-          showLabels && styles.dropdownWithLabels
-        ]}
+      >
+        <View style={styles.selectedCountry}>
+          <CountryFlag isoCode={value} size={24} style={styles.flag} />
+          <View style={styles.countryInfo}>
+            <Text style={styles.countryName}>
+              {selectedCountry?.name || 'Select country'}
+            </Text>
+            {selectedCountry && (
+              <Text style={styles.currencyCode}>{selectedCountry.currency}</Text>
+            )}
+          </View>
+        </View>
+        <MaterialCommunityIcons 
+          name="chevron-down" 
+          size={24} 
+          color="#666"
+        />
+      </Pressable>
+
+      <CountryModal
+        visible={showPicker}
+        onClose={onPress}
+        onSelect={onSelect}
+        countries={options}
+        selectedCountry={value}
       />
     </View>
   );
@@ -84,13 +85,34 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 4,
   },
-  dropdown: {
-    zIndex: 1000,
+  selector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  dropdownWithLabels: {
-    marginTop: 8,
+  selectedCountry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   flag: {
-    borderRadius: 2,
+    borderRadius: 4,
+  },
+  countryInfo: {
+    gap: 2,
+  },
+  countryName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#232D59',
+  },
+  currencyCode: {
+    fontSize: 14,
+    color: '#666',
   },
 });
