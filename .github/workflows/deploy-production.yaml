@@ -24,7 +24,7 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Build Android App Locally
+      - name: Build Android AAB Locally
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}  # Authenticate using the token
           EXPO_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -33,6 +33,6 @@ jobs:
         run: eas build --platform android --profile production --non-interactive --local
 
       - name: Submit to Google Play (Production Track)
-        run: eas submit --platform android --profile production
+        run: eas submit --platform android --profile production --non-interactive
         env:
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}

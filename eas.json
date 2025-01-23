@@ -5,8 +5,8 @@
   "build": {
     "preview": {
       "android": {
-        "gradleCommand": ":app:bundleRelease",
-        "buildType": "app-bundle"
+        "gradleCommand": ":app:assembleRelease",
+        "buildType": "apk"
       }
     },
     "production": {
@@ -17,16 +17,11 @@
     }
   },
   "submit": {
-    "preview": {
-      "android": {
-        "serviceAccountKeyPath": "./service-account.json",
-        "track": "internal"
-      }
-    },
     "production": {
       "android": {
         "serviceAccountKeyPath": "./service-account.json",
-        "track": "production"
+        "track": "production",
+        "releaseStatus": "completed"
       }
     }
   }
