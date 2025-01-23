@@ -24,12 +24,15 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
+      - name: Authenticate EAS
+        run: eas login --token ${{ secrets.EXPO_TOKEN }}
+
       - name: Build Android App Locally
         run: eas build --platform android --profile preview --local
         env:
           EXPO_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           EXPO_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}  # Inject Deepseek API key
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
 
       - name: Submit to Google Play (Internal Track)
         run: eas submit --platform android --profile preview
