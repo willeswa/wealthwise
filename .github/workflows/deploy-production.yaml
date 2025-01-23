@@ -25,7 +25,9 @@ jobs:
         run: npm install -g eas-cli
 
       - name: Authenticate EAS
-        run: eas login --token ${{ secrets.EXPO_TOKEN }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}  # Use the token here
+        run: echo "Expo token set successfully."
 
       - name: Build Android App Locally
         run: eas build --platform android --profile production --local
