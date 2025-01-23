@@ -214,7 +214,7 @@ Requirements:
 - Be specific and actionable
 - Use {country} context`;
 
-export const INVESTMENT_EMPOWERMENT_TEMPLATE = `Analyze investment opportunities in {country} as of {today}.
+export const INVESTMENT_EMPOWERMENT_TEMPLATE = `Analyze investment opportunities in {country} as of {today}, focusing on both mainstream and non-mainstream options that align with the user's profile and local market.
 
 Profile:
 - Goal: {goal}
@@ -222,16 +222,16 @@ Profile:
 - Experience: {experience}
 - Income: {income}
 - Portfolio: {portfolio}
-- Analysis Date: {today}
+- Location: {city}, {country}
 
-Return a JSON object with this exact structure:
+Return JSON with this structure:
 {
   "insights": [
     {
       "type": "opportunity",
       "title": "Brief Title",
       "description": "Clear explanation",
-      "rationale": "Why it fits",
+      "rationale": "Why it fits the user's profile and local market",
       "requirements": {
         "minAmount": 1000,
         "riskLevel": "Medium",
@@ -240,12 +240,18 @@ Return a JSON object with this exact structure:
       "potentialReturn": {
         "estimated": 10,
         "timeframe": "12 months"
-      }
+      },
+      "localInsights": "Specific local market trends or opportunities",
+      "category": "Mainstream/Non-Mainstream" // Indicates if the opportunity is mainstream or non-mainstream
     }
   ]
 }
 
 Requirements:
-- Only suggest available investments
-- Match risk tolerance
-- Be specific and actionable`;
+- Suggest a mix of mainstream and non-mainstream investments
+- Match risk tolerance and financial goals
+- Be specific and actionable
+- Include local market trends and insights
+- Prioritize investments accessible to the user's income level and portfolio size
+- Consider unique local opportunities based on the user's country and city
+- Do not include hardcoded examples; dynamically adapt to the user's location`;
