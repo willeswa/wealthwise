@@ -30,71 +30,53 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli@latest
 
-      - name: Build Android APK Locally
-        id: build
+      - name: Build Android APK
+        id: apk-build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           EXPO_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
-          mkdir -p ./build-artifacts
-          eas build --platform android --profile preview --non-interactive --local --output ./build-artifacts/
-          APK_PATH=$(ls ./build-artifacts/*.apk)
-          echo "APK_PATH=$APK_PATH" >> $GITHUB_OUTPUT
-          echo "APK path: $APK_PATH"
+          mkdir -p build-artifacts
+          eas build \
+            --platform android \
+            --profile preview \
+            --non-interactive \
+            --local \
+            --output build-artifacts/app-preview.apk
+          echo "apk-path=build-artifacts/app-preview.apk" >> $GITHUB_OUTPUT
 
-      - name: Validate APK exists
+      - name: Validate APK
         run: |
-          if [ ! -f "${{ steps.build.outputs.APK_PATH }}" ]; then
-            echo "::error::APK file not found at ${{ steps.build.outputs.APK_PATH }}"
+          if [ ! -f "build-artifacts/app-preview.apk" ]; then
+            echo "::error::Build failed - APK not found"
             exit 1
           fi
 
-      - name: Upload APK as Artifact
-        if: success()
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-preview
-          path: ${{ steps.build.outputs.APK_PATH }}
+          path: build-artifacts/app-preview.apk
+          retention-days: 1
 
-      - name: Comment on PR with APK
-        if: success()
+      - name: Post PR comment
         uses: actions/github-script@v6
-        env:
-          APK_PATH: ${{ steps.build.outputs.APK_PATH }}
         with:
           script: |
-            const fs = require('fs');
-            const { context } = require('@actions/github');
-            const core = require('@actions/core');
-            
-            const apkPath = process.env.APK_PATH;
-            if (!fs.existsSync(apkPath)) {
-              core.setFailed(`APK not found at ${apkPath}`);
-              return;
-            }
+            const apkSize = require('fs').statSync('build-artifacts/app-preview.apk').size / (1024 * 1024);
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `
+                ### 📲 APK Build Successful!
 
-            const apkContent = fs.readFileSync(apkPath, { encoding: 'base64' });
-            const commentBody = `
-              ### 🚀 APK for Testing
+                **Download**: [APK Artifact](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID})
 
-              A new APK has been built for this PR. You can download it below:
-
-              📥 **Download APK**: [app-preview.apk](data:application/vnd.android.package-archive;base64,${apkContent})
-
-              ---
-
-              **Note**: This is a test build. Report any issues in the comments.
-            `;
-
-            try {
-              await github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: commentBody,
-              });
-            } catch (error) {
-              core.error(`Failed to create comment: ${error.message}`);
-            }
+                **Build Details**:
+                - File Size: ${apkSize.toFixed(2)} MB
+                - Generated: ${new Date().toUTCString()}
+              `
+            });
