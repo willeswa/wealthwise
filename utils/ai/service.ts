@@ -3,14 +3,14 @@ import { InvestmentInsight } from '../types/investment';
 import { HouseholdProfile } from '../types/preferences';
 import { AIGoalsResponse, BudgetAnalysisResponse, InvestmentContext, PromptBuilder } from './prompt';
 import { searchFinancialNews } from './search';
-import { AIClient, GoogleAIClient, OpenAIClient } from './aiClients';
+import { AIClient, DeepSeekClient, GoogleAIClient, OpenAIClient } from './aiClients';
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second delay between retries
 
 let aiClient: AIClient;
 
-const initializeAIClient = (provider: 'google' | 'openai') => {
+const initializeAIClient = (provider: 'google' | 'openai' | 'deepseek') => {
   switch (provider) {
     case 'google':
       aiClient = new GoogleAIClient();
@@ -18,13 +18,16 @@ const initializeAIClient = (provider: 'google' | 'openai') => {
     case 'openai':
       aiClient = new OpenAIClient();
       break;
+    case 'deepseek':
+      aiClient = new DeepSeekClient();
+      break;
     default:
       throw new Error('Unsupported AI provider');
   }
 };
 
 // Initialize with default provider
-initializeAIClient('google');
+initializeAIClient('deepseek');
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 

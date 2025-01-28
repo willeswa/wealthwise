@@ -1,4 +1,4 @@
-import { Stack, Redirect } from "expo-router";
+import { Stack } from "expo-router";
 import React, { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { useDatabase } from "../hooks/useDatabase";
@@ -6,8 +6,12 @@ import { usePreferencesStore } from "../store/preferences-store";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../global.css";
 import { initializeBackgroundTasks, checkBackgroundStatus } from "@/utils/background/task-manager";
+import * as Sentry from "@sentry/react-native";
+import { initializeAnalytics } from "@/utils/analytics";
 
-export default function RootLayout() {
+initializeAnalytics()
+
+function RootLayout() {
   const { isReady } = useDatabase();
   const aiEnabled = usePreferencesStore((state) => state.aiEnabled);
   const hasCompletedOnboarding = usePreferencesStore((state) => state.hasCompletedOnboarding);
@@ -15,11 +19,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (isReady && aiEnabled) {
       initializeBackgroundTasks()
-        .then(() => {
-          return checkBackgroundStatus();
-        })
-        .then((status) => {
-        })
+        .then(() => checkBackgroundStatus())
         .catch(console.error);
     }
   }, [isReady, aiEnabled]);
@@ -39,18 +39,12 @@ export default function RootLayout() {
           headerShown: false,
         }}
       >
-        <Stack.Screen 
-          name="onboarding" 
-          redirect={hasCompletedOnboarding}
-        />
-        <Stack.Screen 
-          name="(tabs)" 
-          redirect={!hasCompletedOnboarding}
-        />
-        <Stack.Screen 
+        <Stack.Screen name="onboarding" redirect={hasCompletedOnboarding} />
+        <Stack.Screen name="(tabs)" redirect={!hasCompletedOnboarding} />
+        <Stack.Screen
           name="modals/settings"
           options={{
-            presentation: 'modal',
+            presentation: "modal",
             headerShown: false,
           }}
         />
@@ -58,3 +52,8 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+// Conditionally wrap the root component with Sentry
+const App = __DEV__ ? RootLayout : Sentry.wrap(RootLayout);
+
+export default App;
